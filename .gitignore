@@ -1,0 +1,11 @@
+build/
+.idea/
+.vscode/
+*.pt
+*.pth
+*.onnx
+*.engine
+/cmake-build-debug/
+/temp/
+3rdparty/
+src/version.h
