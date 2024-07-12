@@ -9,6 +9,8 @@
 #include <opencv2/opencv.hpp>
 namespace preprocess
 {
+
+DEPRECATED
 cv::Mat hwc2chw(cv::Mat img)
 {
     // split output=Vec(Mat(b),Mat(g),Mat(r))
@@ -22,37 +24,23 @@ cv::Mat hwc2chw(cv::Mat img)
 
 void hwc2chw(cv::Mat& img, float* out)
 {
-    assert(kDefaultChannel == 3);
+    assert(img.channels() == 3);
+    assert(kDefaultChannel == img.channels());
 
     // vec(mat(r),mat(g),mat(b))
     std::vector<cv::Mat> channels(kDefaultChannel);
     cv::split(img, channels);
 
-    //    size_t h            = img.rows;
-    //    size_t w            = img.cols;
     auto channel_size = img.total() * FLOAT32;
     for (int c = 0; c < kDefaultChannel; ++c)
     {
         cv::Mat channel = channels[ c ];
-
-        // plan1
-        auto offset = c * channel.total();
+        auto    offset  = c * channel.total();
         std::memcpy(out + offset, channel.ptr<float>(0), channel_size);
-
-        // plan2
-        //        int i = 0; // num of pixel
-        //        for (int row = 0; row < h; ++row)
-        //        {
-        //            for (int col = 0; col < w; ++col)
-        //            {
-        //                size_t idx = i + c * channel.total();
-        //                out[ idx ] = channel.at<float>(row, col);
-        //                ++i;
-        //            }
-        //        }
     }
 }
 
+DEPRECATED
 // Split Channel : [RGB][RGB][RGB]->[R,R,R][G,G,G][B,B,B]
 void hwc2chw(const result::NCHW& input_shape, const cv::Mat& data, float* ptr, int bs_offset)
 {
@@ -86,7 +74,6 @@ cv::Mat standardize_image(const cv::Mat& input)
 cv::Mat normalize_image(const cv::Mat& input)
 {
     cv::Mat output;
-    //    input.convertTo(output, CV_32FC3, 1.0 / 255);
     input.convertTo(output, CV_32FC3, 1.f / 255.f);
     return output;
 }

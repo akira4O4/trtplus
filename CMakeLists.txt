@@ -15,8 +15,8 @@ message("PROJECT_VERSION_PATH:  " ${PROJECT_VERSION_PATCH})
 set(OpenCV_HOME "/home/seeking/llf/opencv")
 set(TRT_HOME "/home/seeking/llf/TensorRT")
 set(CUDA_HOME "/usr/local/cuda")
-set(CPP_YAML_HOME ${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp)
-message("CPP_YAML_HOME: " ${CPP_YAML_HOME})
+#set(CPP_YAML_HOME ${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp)
+#message("CPP_YAML_HOME: " ${CPP_YAML_HOME})
 
 set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")
 
@@ -28,7 +28,7 @@ message("PROJECT_SOURCE_DIR: " ${PROJECT_SOURCE_DIR})
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/src
-        ${CPP_YAML_HOME}/include
+        #        ${CPP_YAML_HOME}/include
         ${TRT_HOME}/include
         ${OpenCV_INCLUDE_DIRS}
         ${CUDA_HOME}/include
@@ -38,7 +38,7 @@ link_directories(
         ${OpenCV_HOME}/lib
         ${TRT_HOME}/lib
         ${CUDA_HOME}/lib64
-        ${CPP_YAML_HOME}/lib
+        #        ${CPP_YAML_HOME}/lib
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O0 -Wfatal-errors -pthread -w -g")
@@ -50,14 +50,10 @@ file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 message(${cpp_srcs})
 
-add_executable(${PROJECT_NAME} ${cpp_srcs} main.cpp
-        src/config.cpp
-        src/config.h
-        src/result.hpp
-)
+add_executable(${PROJECT_NAME} ${cpp_srcs} main.cpp)
 
 target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)
 target_link_libraries(${PROJECT_NAME} cuda cublas cudart)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME} ${CPP_YAML_HOME}/lib/libyaml-cpp.so)
+#target_link_libraries(${PROJECT_NAME} ${CPP_YAML_HOME}/lib/libyaml-cpp.so)

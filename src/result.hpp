@@ -11,8 +11,16 @@
 #include <opencv2/core/core.hpp>
 namespace result
 {
+struct XYXY
+{
+    int x1 = 0;
+    int y1 = 0;
+    int x2 = 0;
+    int y2 = 0;
 
-struct Location
+    size_t area() const { return (x2 - x1) * (y2 - y1); };
+};
+struct XYWH
 {
     int x = 0;
     int y = 0;
@@ -25,7 +33,8 @@ struct Location
 struct Box
 {
     size_t      idx = -1;
-    Location    location;
+    XYWH        xywh;
+    XYXY        xyxy;
     float       score = 0.0;
     std::string label;
 };

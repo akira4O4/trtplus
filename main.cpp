@@ -1,10 +1,8 @@
 #include <opencv2/core/core.hpp>
 
-#include "3rdparty/yaml-cpp/include/yaml.h"
 #include "chrono"
 #include "iostream"
 #include "opencv2/opencv.hpp"
-#include "src/config.h"
 #include "src/memory.h"
 #include "src/model.h"
 #include "src/postprocess.h"
@@ -26,10 +24,10 @@ void mem_test()
     std::vector<cv::Mat>    batch_images;
     std::vector<cv::String> batch_images_path;
 
-    auto batch = 4;
-    auto c     = 3;
-    auto h     = 224;
-    auto w     = 224;
+    auto batch = kDefaultBatch;
+    auto c     = kDefaultChannel;
+    auto h     = kDefaultHeight;
+    auto w     = kDefaultWidth;
 
     size_t img_size = c * h * w;
     size_t mem_size = batch * img_size * FLOAT32;
@@ -48,18 +46,10 @@ void mem_test()
 
         for (int j = 0; j < batch; ++j)
         {
-
             cv::Mat img = batch_images.at(j);
             img         = preprocess::resize(img, cv::Size(w, h));
-            std::cout << img.step[ 0 ] * img.rows << std::endl;
-            std::cout << img_size << std::endl;
             img.convertTo(img, CV_32FC3, 1.f / 255.f);
 
-            std::cout << img.isContinuous() << std::endl;
-            std::cout << img.step[ 0 ] * img.rows << std::endl;
-            std::cout << img_size << std::endl;
-
-            //            size_t offset = j * c * h * w*FLOAT32;
             size_t offset = j * img_size;
             float* ptr    = mem_i.get_host_ptr<float>() + offset;
             std::memcpy(ptr, img.ptr<float>(0), img_size * FLOAT32);
@@ -88,19 +78,18 @@ void mem_test()
 
 int main(int argc, char const* argv[])
 {
-    Config config("/home/seeking/llf/code/tensorRT-lab/configs/config.yaml", true);
-    auto   task        = config.get<std::string>("task");
-    auto   model_name  = config.get<std::string>("model");
-    auto   images_dir  = config.get<std::string>("images");
-    auto   output_dir  = config.get<std::string>("output");
-    auto   device      = config.get<int>("device");
-    auto   batch       = config.get<int>("batch");
-    auto   thr         = config.get<std::vector<float>>("thr");
-    auto   labels_file = config.get<std::string>("labels_file");
-    auto   mode        = config.get<std::string>("mode");
+    auto task        = "classification";
+    auto model_path  = "";
+    auto images_dir  = "";
+    auto output_dir  = "";
+    auto device      = kDefaultDevice;
+    auto batch       = 4;
+    auto thr         = std::vector<float>{0.8, 0.2};
+    auto labels_file = "imagenet_classes.txt";
+    auto mode        = kDefaultMode;
 
     std::cout << "Task        : " << task << std::endl;
-    std::cout << "Model       : " << model_name << std::endl;
+    std::cout << "Model       : " << model_path << std::endl;
     std::cout << "Images Dir  : " << images_dir << std::endl;
     std::cout << "Output Dir  : " << output_dir << std::endl;
     std::cout << "Device      : " << device << std::endl;
@@ -108,7 +97,7 @@ int main(int argc, char const* argv[])
     std::cout << "Mode        : " << mode << std::endl;
     //-------------------------------------------------------------------------
 
-    auto model = trt::Model(model_name, device, mode);
+    auto model = trt::Model(model_path, device, mode);
     model.init();
 
     if (model.is_dynamic())
@@ -172,7 +161,6 @@ int main(int argc, char const* argv[])
         }
 
         // Infer--------------------------------------------------------------------------------------------------------
-
         model_input_memory->to_gpu();
         void* bindings[ 2 ]{model_input_memory->get_device_ptr(), model_output_memory->get_device_ptr()};
         model.forward(bindings, stream, nullptr);
@@ -194,6 +182,8 @@ int main(int argc, char const* argv[])
         {
             //            output_host_ptr += k * nc;
             //            postprocess::softmax(output_host_ptr, cls_output, nc, true);
+
+            // TODO:Bad function
             postprocess::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
         }
         std::cout << std::endl;

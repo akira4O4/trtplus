@@ -7,20 +7,23 @@
 #include <opencv2/core/core.hpp>
 #include <utility>
 
-const uchar kDefaultChannel = 3;
+const uchar       kDefaultChannel = 3;
+const uchar       kDefaultDevice  = 0;
+const uchar       kDefaultBatch   = 1;
+const uchar       kDefaultHeight  = 224;
+const uchar       kDefaultWidth   = 224;
+const std::string kDefaultMode    = "fp32";
+const float       kDefaultIOU     = 0.5;
+const float       kDefaultCONF    = 0.5;
 
 #define DEPRECATED [[deprecated]]
 
 #define INT8 sizeof(char)
 #define UINT8 sizeof(uchar)
 
-#define HALF FLOAT16
 #define FLOAT16 sizeof(half)
 #define FLOAT32 sizeof(float)
-
-#define OneByte INT8
-#define TwoByte FLOAT16
-#define FourByte FLOAT32
+#define HALF FLOAT16
 
 #define CUDA_CHECK(call) cuda_check(call, __FILE__, __LINE__)
 
@@ -71,21 +74,21 @@ const uchar kDefaultChannel = 3;
         }                                                                                                              \
     } while (0)
 
-void info(const char *file, int line, const char *fmt, ...);
+void info(const char* file, int line, const char* fmt, ...);
 
-std::string file_name(const std::string &path, bool include_suffix);
+std::string file_name(const std::string& path, bool include_suffix);
 
-std::vector<cv::String> get_image_paths(const std::string &path, const std::string &pattern = "jpg");
+std::vector<cv::String> get_image_paths(const std::string& path, const std::string& pattern = "jpg");
 
-std::vector<cv::Mat> get_images(const std::vector<cv::String> &image_paths);
+std::vector<cv::Mat> get_images(const std::vector<cv::String>& image_paths);
 
-void save_image(const std::string &, const std::vector<cv::Mat> &images, const std::string &pattern = "jpg");
+void save_image(const std::string&, const std::vector<cv::Mat>& images, const std::string& pattern = "jpg");
 
-bool is_exists(std::string &name);
+bool is_exists(std::string& name);
 
-static void cuda_check(cudaError_t err, const char *file, const int line);
+static void cuda_check(cudaError_t err, const char* file, const int line);
 
-static void kernel_check(const char *file, const int line);
+static void kernel_check(const char* file, const int line);
 
-std::vector<std::string> load_txt(const std::string &file_name);
+std::vector<std::string> load_txt(const std::string& file_name);
 #endif
