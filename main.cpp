@@ -78,14 +78,14 @@ void mem_test()
 
 int main(int argc, char const* argv[])
 {
-    auto task        = "classification";
-    auto model_path  = "";
-    auto images_dir  = "";
-    auto output_dir  = "";
+    auto task        = "segmentation";
+    auto model_path  = "/home/seeking/llf/code/tensorRT-lab/koutu.engine";
+    auto images_dir  = "/home/seeking/llf/code/tensorRT-lab/temp/images/imagenet";
+    auto output_dir  = "/home/seeking/llf/code/tensorRT-lab/temp/output";
     auto device      = kDefaultDevice;
-    auto batch       = 4;
+    auto batch       = 3;
     auto thr         = std::vector<float>{0.8, 0.2};
-    auto labels_file = "imagenet_classes.txt";
+    auto labels_file = "/home/seeking/llf/code/tensorRT-lab/imagenet_classes.txt";
     auto mode        = kDefaultMode;
 
     std::cout << "Task        : " << task << std::endl;
@@ -106,7 +106,7 @@ int main(int argc, char const* argv[])
         result::NCHW input = model.get_inputs()[ 0 ];
         input.info();
         nv::Dims4 dims(batch, input.c, input.h, input.w);
-        model.set_binding_dims(input.name, dims);
+        model.set_binding_dims(input.idx, dims);
     }
 
     auto stream = model.get_stream();
@@ -119,7 +119,7 @@ int main(int argc, char const* argv[])
 
     //----------------------------------------------------------------------
     size_t input_size          = input_shape.NxCxHxW(FLOAT32);
-    size_t output_size         = output_shape.NxC(FLOAT32);
+    size_t output_size         = output_shape.NxCxHxW(FLOAT32);
     auto   model_input_memory  = std::make_shared<trt::Memory>(input_shape.idx, input_size, true, stream);
     auto   model_output_memory = std::make_shared<trt::Memory>(output_shape.idx, output_size, true, stream);
 
@@ -177,16 +177,20 @@ int main(int argc, char const* argv[])
             INFO("Output Is Null.");
             return 0;
         }
-
-        for (int k = 0; k < input_shape.bs; k++)
+        else
         {
-            //            output_host_ptr += k * nc;
-            //            postprocess::softmax(output_host_ptr, cls_output, nc, true);
-
-            // TODO:Bad function
-            postprocess::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
+            INFO("Done.");
         }
-        std::cout << std::endl;
+
+        //        for (int k = 0; k < input_shape.bs; k++)
+        //        {
+        //            //            output_host_ptr += k * nc;
+        //            //            postprocess::softmax(output_host_ptr, cls_output, nc, true);
+        //
+        //            // TODO:Bad function
+        //            postprocess::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
+        //        }
+        //        std::cout << std::endl;
 
         batch_images.clear();
         batch_images_path.clear();

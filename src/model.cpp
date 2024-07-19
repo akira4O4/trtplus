@@ -1,7 +1,6 @@
 #include <utility>
 
 #include "NvInfer.h"
-#include "config.h"
 #include "fstream"
 #include "iostream"
 #include "memory"
@@ -16,7 +15,7 @@ namespace trt
 {
 namespace nv = nvinfer1;
 
-Model::Model(std::string model_path, int device, const std::string &mode)
+Model::Model(std::string model_path, int device, const std::string& mode)
 {
     model_path_ = std::move(model_path);
     device_     = device;
@@ -74,7 +73,7 @@ void Model::load_engine()
     {
         in.seekg(0, std::ios::beg);
         data_.resize(file_length);
-        in.read((char *) &data_[ 0 ], file_length);
+        in.read((char*) &data_[ 0 ], file_length);
     }
     in.close();
     INFO("Load engine file: %s", model_path_.c_str());
@@ -99,7 +98,7 @@ void Model::build_model()
                                                       delete_pointer<nv::IExecutionContext>);
     assert(context_);
 
-    num_of_bindings_ = engine_->getNbIOTensors();
+    num_of_bindings_ = engine_->getNbBindings();
 
     set_device(device_);
 
@@ -110,8 +109,8 @@ void Model::check_dynamic()
 {
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto dims = get_binding_dims(name);
+        auto name = engine_->getBindingName(i);
+        auto dims = get_binding_dims(i);
         if (dims.d[ 0 ] == -1)
             is_dynamic_ = true;
     }
@@ -128,7 +127,7 @@ std::vector<int> Model::dims_to_vector(const nv::Dims dims)
     return vec;
 }
 
-nv::Dims Model::vector_to_dims(const std::vector<int> &data)
+nv::Dims Model::vector_to_dims(const std::vector<int>& data)
 {
     nv::Dims d;
     std::memcpy(d.d, data.data(), sizeof(int) * data.size());
@@ -136,7 +135,7 @@ nv::Dims Model::vector_to_dims(const std::vector<int> &data)
     return d;
 }
 
-bool Model::forward(void *const *bindings, cudaStream_t stream, cudaEvent_t *inputConsumed)
+bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
 {
     return context_->enqueueV2(bindings, stream, inputConsumed);
 }
@@ -148,19 +147,19 @@ void Model::reset()
     runtime_.reset();
 }
 
-nv::Dims Model::get_binding_dims(const std::string &name)
+nv::Dims Model::get_binding_dims(int idx)
 {
-    return context_->getTensorShape(name.c_str());
+    return context_->getBindingDimensions(idx);
 }
 
-bool Model::set_binding_dims(const std::string &name, nv::Dims dims)
+bool Model::set_binding_dims(int idx, nv::Dims dims)
 {
-    return context_->setInputShape(name.c_str(), dims);
+    return context_->setBindingDimensions(idx, dims);
 }
 
-nv::DataType Model::get_binding_datatype(const std::string &name)
+nv::DataType Model::get_binding_datatype(int idx)
 {
-    return engine_->getTensorDataType(name.c_str());
+    return engine_->getBindingDataType(idx);
 }
 
 void Model::print_dims(nv::Dims dims)
@@ -186,11 +185,10 @@ void Model::decode_input()
     inputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto mode = engine_->getTensorIOMode(name);
-        auto dims = context_->getTensorShape(name);
-        if (mode == nv::TensorIOMode::kINPUT)
+        if (engine_->bindingIsInput(i))
         {
+            auto         name = engine_->getBindingName(i);
+            auto         dims = context_->getBindingDimensions(i);
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
             inputs_.emplace_back(nchw);
         }
@@ -203,16 +201,16 @@ void Model::decode_output()
     output_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto mode = engine_->getTensorIOMode(name);
-        auto dims = context_->getTensorShape(name);
-        if (mode == nv::TensorIOMode::kOUTPUT)
+        if (!engine_->bindingIsInput(i))
         {
+
+            auto         name = engine_->getBindingName(i);
+            auto         dims = context_->getBindingDimensions(i);
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
             output_.emplace_back(nchw);
         }
+        INFO("Num Of Output: %d", output_.size());
     }
-    INFO("Num Of Output: %d", output_.size());
 }
 
 void Model::decode_binding()
@@ -222,16 +220,15 @@ void Model::decode_binding()
 
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto mode = engine_->getTensorIOMode(name);
-        auto dims = context_->getTensorShape(name);
+        auto name = engine_->getBindingName(i);
+        auto dims = context_->getBindingDimensions(i);
 
-        if (mode == nv::TensorIOMode::kINPUT)
+        if (engine_->bindingIsInput(i))
         {
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
             inputs_.emplace_back(nchw);
         }
-        else if (mode == nv::TensorIOMode::kOUTPUT)
+        else
         {
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
             output_.emplace_back(nchw);
