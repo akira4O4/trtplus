@@ -17,7 +17,7 @@ images.
 - Only Support **Linux** for now
 - Auto-allocation CPU and GPU memory
 - Auto-analysis TensorRT Model
-- Auto-support **Dynamic** dmoel
+- Auto-support **Dynamic** model
 
 ---
 
