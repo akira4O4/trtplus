@@ -1,4 +1,4 @@
-# TensorRT-Lab
+# TRTPLUS
 
 **Support Tensorrt Version 8.5.x**
 
