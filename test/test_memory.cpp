@@ -1,4 +1,4 @@
-#include "../src/cpu/prepprocess.h"
+#include "../src/cpu/preprocess.h"
 #include "../src/memory.h"
 #include "iostream"
 #include "unistd.h"
@@ -8,7 +8,7 @@
 
 namespace nv = nvinfer1;
 
-int memory()
+int main()
 {
     std::string images_dir = "/home/seeking/llf/code/trtplus/temp/images/imagenet";
 

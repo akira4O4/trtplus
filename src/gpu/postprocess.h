@@ -2,8 +2,8 @@
 // Created by main on 24-4-11.
 //
 
-#ifndef MAIN_POSTPROCESS_H
-#define MAIN_POSTPROCESS_H
+#ifndef MAIN_GPU_POSTPROCESS_H
+#define MAIN_GPU_POSTPROCESS_H
 
 #include "algorithm"
 #include "iostream"

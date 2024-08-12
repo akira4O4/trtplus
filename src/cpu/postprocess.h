@@ -2,8 +2,8 @@
 // Created by main on 24-4-11.
 //
 
-#ifndef MAIN_POSTPROCESS_H
-#define MAIN_POSTPROCESS_H
+#ifndef MAIN_CPU_POSTPROCESS_H
+#define MAIN_CPU_POSTPROCESS_H
 
 #include "algorithm"
 #include "iostream"
@@ -16,7 +16,7 @@ namespace cpu
 {
 
 template <typename T>
-void softmax(const T *src, T *dst, const int num_of_label, bool safe = false)
+void softmax(const T* src, T* dst, const int num_of_label, bool safe = false)
 {
     T max_val = 0;
     if (safe)
@@ -56,7 +56,12 @@ std::vector<int> argmin(T data);
 
 void classification(const float output[], int num_classes, std::vector<float> thr, std::vector<std::string> labels,
                     std::string save);
-} // namespace postprocess
+} // namespace cpu
 
-void argmax(float *x, int *y, int rows, int cols, int chan);
+void argmax(float* x, int* y, int rows, int cols, int chan);
+
+void yolov8();
+
+void yolov10();
+
 #endif // MAIN_POSTPROCESS_H
