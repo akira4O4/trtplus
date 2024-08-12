@@ -67,7 +67,7 @@ MAX_BATCH     = # max input batch
 Run:
 
 ```bash
-cd /onnx2engine
+cd /export
 sudo chmod +x export_static(dynamica)_engine.sh
 ./export_static(dynamica)_engine.sh
 ```
