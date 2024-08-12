@@ -9,6 +9,8 @@
 #include <chrono>
 #include <ctime>
 #include <opencv2/core/core.hpp>
+#include <utility>
+
 namespace result
 {
 struct XYXY
@@ -41,11 +43,23 @@ struct Box
 
 struct Detection
 {
-    size_t           idx = -1;
+    int              idx = -1;
     std::string      name;
-    std::vector<Box> boxes;
-    bool             is_empty() const { return boxes.empty(); };
-    size_t           len() const { return boxes.size(); };
+    std::vector<Box> boxes = {};
+
+    Detection()
+        : idx(-1)
+        , name("")
+        , boxes()
+    {}
+    Detection(int idx, std::string name)
+        : idx(idx)
+        , name(std::move(name))
+        , boxes()
+    {}
+
+    bool   is_empty() const { return boxes.empty(); };
+    size_t len() const { return boxes.size(); };
 };
 struct NCHW
 {

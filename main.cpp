@@ -103,12 +103,12 @@ int main(int argc, char const* argv[])
             cv::Mat img = batch_images.at(n);
 
             out = cpu::resize(img, input_wh);
-            out = cpu::bgr2rgb(out);
-            out = cpu::normalize_image(out);
+            out = cpu::image2rgb(out);
+            out = cpu::normalize(out);
 
             size_t offset = n * input_shape.CxHxW();
             //            host_ptr += n * input_shape.CxHxW();
-            cpu::hwc2chw(out, host_ptr + offset);
+            cpu::hwc2chw_v1(out, host_ptr + offset);
         }
 
         // Infer--------------------------------------------------------------------------------------------------------
