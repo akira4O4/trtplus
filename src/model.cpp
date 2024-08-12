@@ -1,7 +1,7 @@
 #include <utility>
 
 #include "NvInfer.h"
-#include "config.h"
+// #include "config.h"
 #include "fstream"
 #include "iostream"
 #include "memory"
@@ -16,7 +16,7 @@ namespace trt
 {
 namespace nv = nvinfer1;
 
-Model::Model(std::string model_path, int device, const std::string &mode)
+Model::Model(std::string model_path, int device, const std::string& mode)
 {
     model_path_ = std::move(model_path);
     device_     = device;
@@ -74,7 +74,7 @@ void Model::load_engine()
     {
         in.seekg(0, std::ios::beg);
         data_.resize(file_length);
-        in.read((char *) &data_[ 0 ], file_length);
+        in.read((char*) &data_[ 0 ], file_length);
     }
     in.close();
     INFO("Load engine file: %s", model_path_.c_str());
@@ -128,7 +128,7 @@ std::vector<int> Model::dims_to_vector(const nv::Dims dims)
     return vec;
 }
 
-nv::Dims Model::vector_to_dims(const std::vector<int> &data)
+nv::Dims Model::vector_to_dims(const std::vector<int>& data)
 {
     nv::Dims d;
     std::memcpy(d.d, data.data(), sizeof(int) * data.size());
@@ -136,7 +136,7 @@ nv::Dims Model::vector_to_dims(const std::vector<int> &data)
     return d;
 }
 
-bool Model::forward(void *const *bindings, cudaStream_t stream, cudaEvent_t *inputConsumed)
+bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
 {
     return context_->enqueueV2(bindings, stream, inputConsumed);
 }
@@ -148,17 +148,17 @@ void Model::reset()
     runtime_.reset();
 }
 
-nv::Dims Model::get_binding_dims(const std::string &name)
+nv::Dims Model::get_binding_dims(const std::string& name)
 {
     return context_->getTensorShape(name.c_str());
 }
 
-bool Model::set_binding_dims(const std::string &name, nv::Dims dims)
+bool Model::set_binding_dims(const std::string& name, nv::Dims dims)
 {
     return context_->setInputShape(name.c_str(), dims);
 }
 
-nv::DataType Model::get_binding_datatype(const std::string &name)
+nv::DataType Model::get_binding_datatype(const std::string& name)
 {
     return engine_->getTensorDataType(name.c_str());
 }

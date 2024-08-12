@@ -1,12 +1,12 @@
 #include <opencv2/core/core.hpp>
 
 #include "chrono"
+#include "cpu/postprocess.h"
+#include "cpu/prepprocess.h"
 #include "iostream"
 #include "opencv2/opencv.hpp"
 #include "src/memory.h"
 #include "src/model.h"
-#include "src/postprocess.h"
-#include "src/prepprocess.h"
 #include "src/result.hpp"
 #include "src/utils.h"
 #include "unistd.h"
@@ -47,7 +47,7 @@ void mem_test()
         for (int j = 0; j < batch; ++j)
         {
             cv::Mat img = batch_images.at(j);
-            img         = preprocess::resize(img, cv::Size(w, h));
+            img         = cpu::resize(img, cv::Size(w, h));
             img.convertTo(img, CV_32FC3, 1.f / 255.f);
 
             size_t offset = j * img_size;
@@ -106,7 +106,7 @@ int main(int argc, char const* argv[])
         result::NCHW input = model.get_inputs()[ 0 ];
         input.info();
         nv::Dims4 dims(batch, input.c, input.h, input.w);
-        model.set_binding_dims(input.idx, dims);
+        model.set_binding_dims(input.name, dims);
     }
 
     auto stream = model.get_stream();
@@ -166,13 +166,13 @@ int main(int argc, char const* argv[])
         {
             cv::Mat img = batch_images.at(n);
 
-            out = preprocess::resize(img, input_wh);
-            out = preprocess::bgr2rgb(out);
-            out = preprocess::normalize_image(out);
+            out = cpu::resize(img, input_wh);
+            out = cpu::bgr2rgb(out);
+            out = cpu::normalize_image(out);
 
             size_t offset = n * input_shape.CxHxW();
             //            host_ptr += n * input_shape.CxHxW();
-            preprocess::hwc2chw(out, host_ptr + offset);
+            cpu::hwc2chw(out, host_ptr + offset);
         }
 
         // Infer--------------------------------------------------------------------------------------------------------

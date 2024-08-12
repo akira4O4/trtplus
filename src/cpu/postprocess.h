@@ -12,7 +12,7 @@
 #include <functional>
 #include <vector>
 
-namespace postprocess
+namespace cpu
 {
 
 template <typename T>

@@ -2,12 +2,11 @@
 // Created by main on 24-4-11.
 //
 
-#include "postprocess.h"
-
-namespace postprocess
+#include "cpu/postprocess.h"
+namespace cpu
 {
 // easy impl
-void argmax(float *x, int *y, int rows, int cols, int chan)
+void argmax(float* x, int* y, int rows, int cols, int chan)
 {
     for (int i = 0, wh = rows * cols; i < rows; i++)
     {
