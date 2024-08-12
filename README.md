@@ -1,6 +1,6 @@
-# TRTPLUS
+# TRTPlus
 
-**Support Tensorrt Version 8.5.x**
+**Support Tensorrt Version: 8.5.x**
 
 ---
 
