@@ -5,7 +5,7 @@ MODEL_NAME=yolov8n-cls-dynamic
 #-----------------------------------------------------------------------
 INPUT_PATH=/home/seeking/llf/code/tensorRT-lab/temp/models/yolov8
 OUTPUT_PATH=${INPUT_PATH}
-#OUTPUT_PATH=/home/seeking/llf/code/tensorRT-lab/temp/models/yolov8
+#OUTPUT_PATH=/home/seeking/llf/code/trtplus/temp/models/yolov8
 #-----------------------------------------------------------------------
 INPUT_NAME=images
 C=3
