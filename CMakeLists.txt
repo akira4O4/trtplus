@@ -15,8 +15,6 @@ message("PROJECT_VERSION_PATH:  " ${PROJECT_VERSION_PATCH})
 set(OpenCV_HOME "/home/seeking/llf/opencv")
 set(TRT_HOME "/home/seeking/llf/TensorRT")
 set(CUDA_HOME "/usr/local/cuda")
-#set(CPP_YAML_HOME ${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp)
-#message("CPP_YAML_HOME: " ${CPP_YAML_HOME})
 
 set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")
 
@@ -43,8 +41,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O0 -Wfatal-errors -pth
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 -O0 -Xcompiler -fPIC -g -w ${CUDA_GEN_CODE}")
 
 file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
-#file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cxx)
-#set(cpp_srcs ${cpp_srcs} yolo/code1/tensorrt_classifier.cpp)
 
 message(${cpp_srcs})
 
@@ -54,4 +50,3 @@ target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)
 target_link_libraries(${PROJECT_NAME} cuda cublas cudart)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-#target_link_libraries(${PROJECT_NAME} ${CPP_YAML_HOME}/lib/libyaml-cpp.so)
