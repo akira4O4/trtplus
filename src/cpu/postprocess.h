@@ -48,20 +48,5 @@ inline size_t argmax_impl(T begin, T end)
     return std::distance(begin, std::max_element(begin, end));
 }
 
-template <typename T>
-std::vector<int> argmax(T data);
-
-template <typename T>
-std::vector<int> argmin(T data);
-
-void classification(const float output[], int num_classes, std::vector<float> thr, std::vector<std::string> labels,
-                    std::string save);
 } // namespace cpu
-
-void argmax(float* x, int* y, int rows, int cols, int chan);
-
-void yolov8();
-
-void yolov10();
-
 #endif // MAIN_POSTPROCESS_H

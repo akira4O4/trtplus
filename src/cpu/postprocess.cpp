@@ -5,8 +5,7 @@
 #include "cpu/postprocess.h"
 namespace cpu
 {
-// easy impl
-void argmax(float* x, int* y, int rows, int cols, int chan)
+void argmax(const float* x, int* y, int rows, int cols, int chan)
 {
     for (int i = 0, wh = rows * cols; i < rows; i++)
     {
@@ -43,4 +42,4 @@ void classification(const float output[], int num_classes, std::vector<float> th
     //        }
     //    }
 }
-} // namespace postprocess
+} // namespace cpu
