@@ -1,12 +1,10 @@
-#include <utility>
-
 #include "NvInfer.h"
-// #include "config.h"
 #include "fstream"
 #include "iostream"
 #include "memory"
 #include "vector"
 #include <model.h>
+#include <utility>
 #include <utils.h>
 
 #include "NvInfer.h"
@@ -16,7 +14,7 @@ namespace trt
 {
 namespace nv = nvinfer1;
 
-Model::Model(std::string model_path, int device, const std::string& mode)
+Model::Model(const std::string& model_path, int device, const std::string& mode)
 {
     model_path_ = std::move(model_path);
     device_     = device;
@@ -106,34 +104,28 @@ void Model::build_model()
     INFO("Build Model Done.");
 }
 
-void Model::check_dynamic()
+void Model::check_dynamic(check_dynamic)
 {
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto dims = get_binding_dims(name);
+        auto dims = get_binding_dims(i);
         if (dims.d[ 0 ] == -1)
+        {
             is_dynamic_ = true;
+            break;
+        }
     }
-
-    if (is_dynamic_)
-        INFO("Model Is Dynamic.");
-    else
-        INFO("Model Is Static.");
 }
 
-std::vector<int> Model::dims_to_vector(const nv::Dims dims)
+void Model::check_model_type()
 {
-    std::vector<int> vec(dims.d, dims.d + dims.nbDims);
-    return vec;
-}
-
-nv::Dims Model::vector_to_dims(const std::vector<int>& data)
-{
-    nv::Dims d;
-    std::memcpy(d.d, data.data(), sizeof(int) * data.size());
-    d.nbDims = data.size();
-    return d;
+    auto name = engine_->getIOTensorName(0);
+    if (engine_->getTensorDataType(name) == nvinfer1::DataType::kFLOAT)
+        is_fp32_ = true;
+    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kHALF)
+        is_fp16_ = true;
+    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kINT8)
+        is_int8_ = true;
 }
 
 bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
@@ -153,35 +145,31 @@ nv::Dims Model::get_binding_dims(const std::string& name)
     return context_->getTensorShape(name.c_str());
 }
 
+nv::Dims Model::get_binding_dims(uchar index)
+{
+    auto name = engine_->getIOTensorName(index);
+    return context_->getTensorShape(name);
+}
+
 bool Model::set_binding_dims(const std::string& name, nv::Dims dims)
 {
     return context_->setInputShape(name.c_str(), dims);
 }
 
-nv::DataType Model::get_binding_datatype(const std::string& name)
+bool Model::set_binding_dims(uchar index, nv::Dims dims)
 {
-    return engine_->getTensorDataType(name.c_str());
+    auto name = engine_->getIOTensorName(index);
+    return context_->setInputShape(name, dims);
 }
 
-void Model::print_dims(nv::Dims dims)
-{
-    std::cout << "[ ";
-
-    for (int i = 0; i < dims.nbDims; i++)
-    {
-        std::cout << dims.d[ i ] << " ";
-    }
-    std::cout << " ]\n";
-}
-
-void Model::set_device(const int device)
+void Model::set_device(uchar device)
 {
     device_ = device;
     cudaSetDevice(device_);
     INFO("Set Device: %d.", device_);
 }
 
-void Model::decode_input()
+void Model::decode_model_input()
 {
     inputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
@@ -198,7 +186,7 @@ void Model::decode_input()
     INFO("Num Of Input: %d", inputs_.size());
 }
 
-void Model::decode_output()
+void Model::decode_model_output()
 {
     output_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
@@ -215,7 +203,7 @@ void Model::decode_output()
     INFO("Num Of Output: %d", output_.size());
 }
 
-void Model::decode_binding()
+void Model::decode_model_binding()
 {
     inputs_.clear();
     output_.clear();

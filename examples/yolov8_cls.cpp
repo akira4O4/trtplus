@@ -1,16 +1,11 @@
-//
-// Created by seeking on 8/12/24.
-//
-
 #include "../src/memory.h"
 #include "../src/model.h"
-#include "../src/result.hpp"
+#include "../src/precision.h"
 #include "../src/utils.h"
 #include "chrono"
 #include "cpu/postprocess.h"
 #include "cpu/preprocess.h"
 #include "iostream"
-#include "opencv2/opencv.hpp"
 #include "unistd.h"
 #include "vector"
 #include "yolo.h"
@@ -18,7 +13,7 @@
 
 void yolov8_cls()
 {
-    std::string model_path  = "yolov8.cls.engine";
+    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/yolov8n-cls-1x3x224x224.engine";
     std::string images_dir  = "../assets/images/imagenet";
     std::string labels_file = "../assets/imagenet_classes.txt";
     std::string mode        = kDefaultMode;
@@ -71,7 +66,7 @@ void yolov8_cls()
     std::vector<cv::Mat>    batch_images;
     std::vector<cv::String> batch_images_path;
 
-    std::vector<std::string> labels = load_txt(labels_file);
+    std::vector<std::string> labels = load_label_from_txt(labels_file);
     for (int i = 0; i < images.size(); ++i)
     {
 

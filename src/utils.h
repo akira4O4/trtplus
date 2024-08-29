@@ -7,6 +7,7 @@
 #include <experimental/filesystem>
 #include <opencv2/core/core.hpp>
 #include <utility>
+
 constexpr uchar   kDefaultDevice  = 0;
 constexpr uchar   kDefaultBatch   = 1;
 constexpr uchar   kDefaultChannel = 3;
@@ -16,10 +17,6 @@ const std::string kDefaultMode    = "fp32";
 
 constexpr float kDefaultIoU  = 0.5;
 constexpr float kDefaultConf = 0.5;
-
-constexpr uchar kINT8    = sizeof(char);  // size=1
-constexpr uchar kFLOAT16 = sizeof(half);  // size=2
-constexpr uchar kFLOAT32 = sizeof(float); // size=4
 
 #define DEPRECATED [[deprecated]]
 
@@ -88,10 +85,12 @@ static void cuda_check(cudaError_t err, const char* file, const int line);
 
 static void kernel_check(const char* file, const int line);
 
-std::vector<std::string> load_txt(const std::string& file_name);
+std::vector<std::string> load_label_from_txt(const std::string& file_name);
 
-unsigned short f32_to_bf16(float value);
+std::vector<int> dims2vector(nvinfer1::Dims dims);
 
-float bf16_to_f32(unsigned short value);
+nvinfer1::Dims vector2dims(const std::vector<int>& data);
+
+void print_dims(nvinfer1::Dims dims);
 
 #endif

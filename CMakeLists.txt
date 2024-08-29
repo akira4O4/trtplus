@@ -12,8 +12,8 @@ message("PROJECT_VERSION_MINOR: " ${PROJECT_VERSION_MINOR})
 message("PROJECT_VERSION_PATH:  " ${PROJECT_VERSION_PATCH})
 
 # SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)   
-set(OpenCV_HOME "/home/main/llf/opencv")
-set(TRT_HOME "/home/main/llf/TensorRT")
+set(OpenCV_HOME "/home/seeking/llf/opencv")
+set(TRT_HOME "/home/seeking/llf/TensorRT")
 set(CUDA_HOME "/usr/local/cuda")
 
 set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")

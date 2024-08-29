@@ -1,5 +1,5 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include <utility>
 
@@ -16,8 +16,6 @@ namespace trt
 {
 
 namespace nv = nvinfer1;
-
-//-----------------------------------------------------------
 
 template <typename T>
 void delete_pointer(T* ptr)
@@ -90,19 +88,20 @@ class NVLogger : public nv::ILogger
 class Model
 {
   private:
-    bool fp16_   = false;
-    bool int8_   = false;
-    int  device_ = 0;
+    bool use_fp16_ = false;
+    bool use_int8_ = false;
 
-    cudaStream_t stream_ = nullptr;
+    uchar device_          = 0;
+    bool  is_int8_         = false;
+    bool  is_fp16_         = false;
+    bool  is_fp32_         = true;
+    bool  is_dynamic_      = false;
+    uchar num_of_bindings_ = 0;
 
-    int  num_of_bindings_{0};
-    bool is_dynamic_{false};
-
-    std::string model_path_;
-
+    std::string          model_path_;
     std::vector<uint8_t> data_{};
 
+    cudaStream_t                           stream_  = nullptr;
     std::shared_ptr<nv::IRuntime>          runtime_ = nullptr;
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
@@ -114,9 +113,7 @@ class Model
     Model() = default;
     ~Model();
 
-    explicit Model(std::string engine_path) { model_path_ = std::move(engine_path); };
-
-    explicit Model(std::string model_path, int device, const std::string& mode);
+    explicit Model(const std::string& model_path, int device, const std::string& mode);
 
     void init();
 
@@ -140,45 +137,45 @@ class Model
 
     inline int get_device() const { return device_; };
 
-    void set_device(int device);
-
-    void reset();
-
-    static std::vector<int> dims_to_vector(nv::Dims dims);
-
-    static nv::Dims vector_to_dims(const std::vector<int>& data);
-
-    bool set_binding_dims(const std::string& name, nv::Dims dims);
-
-    nv::Dims get_binding_dims(const std::string& name);
-
-    nv::DataType get_binding_datatype(const std::string& name);
-
-    bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
-
     inline int get_num_of_binding() const { return num_of_bindings_; };
 
     inline bool is_dynamic() const { return is_dynamic_; };
 
+    void set_device(uchar device);
+
+    void reset();
+
+    bool set_binding_dims(const std::string& name, nv::Dims dims);
+
+    bool set_binding_dims(uchar index, nv::Dims dims);
+
+    nv::Dims get_binding_dims(const std::string& name);
+
+    nv::Dims get_binding_dims(uchar index);
+
+    bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
+
     inline void use_fp16()
     {
-        fp16_ = true;
-        int8_ = false;
+        use_fp16_ = true;
+        use_int8_ = false;
     };
 
     inline void use_int8()
     {
-        fp16_ = false;
-        int8_ = true;
+        use_fp16_ = false;
+        use_int8_ = true;
     };
 
-    static void print_dims(nv::Dims dims);
+    void decode_model_input();
 
-    void decode_input();
+    void decode_model_output();
 
-    void decode_output();
+    void decode_model_binding();
 
-    void decode_binding();
+    void check_model_type();
+
+    void set_model_input_shape(nvinfer1::Dims dims);
 };
 
 } // namespace trt

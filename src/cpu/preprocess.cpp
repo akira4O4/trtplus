@@ -41,7 +41,7 @@ void hwc2chw_v2(cv::Mat& img, float* out)
     std::vector<cv::Mat> channels(ic);
     cv::split(img, channels);
 
-    auto channel_size = img.total() * FLOAT32;
+    auto channel_size = img.total() * kFLOAT32;
     for (int c = 0; c < ic; ++c)
     {
         cv::Mat channel = channels[ c ];
