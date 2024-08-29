@@ -120,3 +120,24 @@ std::vector<std::string> load_txt(const std::string &file_name)
     ifs.close();
     return classes;
 }
+
+unsigned short f32_to_bf16(float value)
+{
+    // 16 : 16
+    union {
+        unsigned int u;
+        float        f;
+    } out{};
+    out.f = value;
+    return out.u >> 16;
+}
+float bf16_to_f32(unsigned short value)
+{
+    // 16 : 16
+    union {
+        unsigned int u;
+        float        f;
+    } out{};
+    out.u = value << 16;
+    return out.f;
+}

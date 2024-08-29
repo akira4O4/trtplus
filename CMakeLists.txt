@@ -12,8 +12,8 @@ message("PROJECT_VERSION_MINOR: " ${PROJECT_VERSION_MINOR})
 message("PROJECT_VERSION_PATH:  " ${PROJECT_VERSION_PATCH})
 
 # SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)   
-set(OpenCV_HOME "/home/seeking/llf/opencv")
-set(TRT_HOME "/home/seeking/llf/TensorRT")
+set(OpenCV_HOME "/home/main/llf/opencv")
+set(TRT_HOME "/home/main/llf/TensorRT")
 set(CUDA_HOME "/usr/local/cuda")
 
 set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")
@@ -44,7 +44,10 @@ file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 message(${cpp_srcs})
 
-add_executable(${PROJECT_NAME} ${cpp_srcs} main.cpp)
+add_executable(
+        ${PROJECT_NAME} ${cpp_srcs} main.cpp
+        examples/yolov8_cls.cpp
+)
 
 target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)

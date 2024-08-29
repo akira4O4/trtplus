@@ -2,28 +2,26 @@
 #define UTILS_H
 
 #include "NvInfer.h"
+#include "cuda_fp16.h"
 #include "iostream"
 #include <experimental/filesystem>
 #include <opencv2/core/core.hpp>
 #include <utility>
-
-const uchar       kDefaultChannel = 3;
-const uchar       kDefaultDevice  = 0;
-const uchar       kDefaultBatch   = 1;
-const uchar       kDefaultHeight  = 224;
-const uchar       kDefaultWidth   = 224;
+constexpr uchar   kDefaultDevice  = 0;
+constexpr uchar   kDefaultBatch   = 1;
+constexpr uchar   kDefaultChannel = 3;
+constexpr uchar   kDefaultHeight  = 224;
+constexpr uchar   kDefaultWidth   = 224;
 const std::string kDefaultMode    = "fp32";
-const float       kDefaultIOU     = 0.5;
-const float       kDefaultCONF    = 0.5;
+
+constexpr float kDefaultIoU  = 0.5;
+constexpr float kDefaultConf = 0.5;
+
+constexpr uchar kINT8    = sizeof(char);  // size=1
+constexpr uchar kFLOAT16 = sizeof(half);  // size=2
+constexpr uchar kFLOAT32 = sizeof(float); // size=4
 
 #define DEPRECATED [[deprecated]]
-
-#define INT8 sizeof(char)
-#define UINT8 sizeof(uchar)
-
-#define FLOAT16 sizeof(half)
-#define FLOAT32 sizeof(float)
-#define HALF FLOAT16
 
 #define CUDA_CHECK(call) cuda_check(call, __FILE__, __LINE__)
 
@@ -92,25 +90,8 @@ static void kernel_check(const char* file, const int line);
 
 std::vector<std::string> load_txt(const std::string& file_name);
 
-unsigned short f32_to_bf16(float value)
-{
-    // 16 : 16
-    union {
-        unsigned int u;
-        float        f;
-    } out{};
-    out.f = value;
-    return out.u >> 16;
-}
-float bf16_to_f32(unsigned short value)
-{
-    // 16 : 16
-    union {
-        unsigned int u;
-        float        f;
-    } out{};
-    out.u = value << 16;
-    return out.f;
-}
+unsigned short f32_to_bf16(float value);
+
+float bf16_to_f32(unsigned short value);
 
 #endif

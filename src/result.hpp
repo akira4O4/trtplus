@@ -70,13 +70,13 @@ struct NCHW
     int    c   = 0;
     int    h   = 0;
     int    w   = 0;
-    size_t NxC(size_t byte = UINT8) const { return bs * c * byte; };
+    size_t NxC(size_t byte = kINT8) const { return bs * c * byte; };
 
-    size_t HxW(size_t byte = UINT8) const { return w * h * byte; };
+    size_t HxW(size_t byte = kINT8) const { return w * h * byte; };
 
-    size_t CxHxW(size_t byte = UINT8) const { return c * w * h * byte; };
+    size_t CxHxW(size_t byte = kINT8) const { return c * w * h * byte; };
 
-    size_t NxCxHxW(size_t byte = UINT8) const { return bs * c * w * h * byte; };
+    size_t NxCxHxW(size_t byte = kINT8) const { return bs * c * w * h * byte; };
 
     void info() const
     {

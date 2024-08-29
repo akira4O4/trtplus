@@ -20,7 +20,7 @@ namespace nv = nvinfer1;
 //-----------------------------------------------------------
 
 template <typename T>
-void delete_pointer(T *ptr)
+void delete_pointer(T* ptr)
 {
     delete ptr;
 }
@@ -28,7 +28,7 @@ void delete_pointer(T *ptr)
 struct PointerDeleter
 {
     template <typename T>
-    void operator()(T *ptr) const
+    void operator()(T* ptr) const
     {
         delete ptr;
     }
@@ -37,15 +37,18 @@ struct PointerDeleter
 template <typename T>
 using make_unique = std::unique_ptr<T, PointerDeleter>;
 
-// template <typename T>
-// using make_shared = std::shared_ptr<T, PointerDeleter>;
+template <typename T>
+std::shared_ptr<T> make_shared(T* ptr)
+{
+    return std::shared_ptr<T>(ptr, PointerDeleter());
+}
 
 //-----------------------------------------------------------
 
 class NVLogger : public nv::ILogger
 {
   public:
-    static NVLogger &instance()
+    static NVLogger& instance()
     {
         static NVLogger instance;
         return instance;
@@ -58,7 +61,7 @@ class NVLogger : public nv::ILogger
 
     using Severity = nv::ILogger::Severity;
 
-    void log(Severity severity, const char *msg) noexcept override
+    void log(Severity severity, const char* msg) noexcept override
     {
         switch (severity)
         {
@@ -113,7 +116,7 @@ class Model
 
     explicit Model(std::string engine_path) { model_path_ = std::move(engine_path); };
 
-    explicit Model(std::string model_path, int device, const std::string &mode);
+    explicit Model(std::string model_path, int device, const std::string& mode);
 
     void init();
 
@@ -124,15 +127,6 @@ class Model
     void create_stream();
 
     void check_dynamic();
-
-    DEPRECATED
-    inline std::shared_ptr<nv::IRuntime> get_runtime() { return runtime_; };
-
-    DEPRECATED
-    inline std::shared_ptr<nv::ICudaEngine> get_engine() { return engine_; };
-
-    DEPRECATED
-    inline std::shared_ptr<nv::IExecutionContext> get_context() { return context_; };
 
     inline std::vector<result::NCHW> get_inputs() { return inputs_; };
 
@@ -152,15 +146,15 @@ class Model
 
     static std::vector<int> dims_to_vector(nv::Dims dims);
 
-    static nv::Dims vector_to_dims(const std::vector<int> &data);
+    static nv::Dims vector_to_dims(const std::vector<int>& data);
 
-    bool set_binding_dims(const std::string &name, nv::Dims dims);
+    bool set_binding_dims(const std::string& name, nv::Dims dims);
 
-    nv::Dims get_binding_dims(const std::string &name);
+    nv::Dims get_binding_dims(const std::string& name);
 
-    nv::DataType get_binding_datatype(const std::string &name);
+    nv::DataType get_binding_datatype(const std::string& name);
 
-    bool forward(void *const *bindings, cudaStream_t stream, cudaEvent_t *inputConsumed);
+    bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 
     inline int get_num_of_binding() const { return num_of_bindings_; };
 

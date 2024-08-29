@@ -37,16 +37,61 @@ void softmax(const T* src, T* dst, const int num_of_label, bool safe = false)
 }
 
 template <typename T>
-inline size_t argmin_impl(T begin, T end)
+inline size_t argmin_v1(T begin, T end)
 {
     return std::distance(begin, std::min_element(begin, end));
 }
 
 template <typename T>
-inline size_t argmax_impl(T begin, T end)
+inline size_t argmin_v2(T begin, T end)
+{
+    if (begin == end)
+        return 0;
+
+    T      min_iter  = begin;
+    size_t min_index = 0;
+    size_t index     = 0;
+
+    for (T iter = begin; iter != end; ++iter, ++index)
+    {
+        if (*iter < *min_iter)
+        {
+            min_iter  = iter;
+            min_index = index;
+        }
+    }
+
+    return min_index;
+}
+
+template <typename T>
+inline size_t argmax_v1(T begin, T end)
 {
     return std::distance(begin, std::max_element(begin, end));
 }
 
+template <typename T>
+inline size_t argmax_v2(T begin, T end)
+{
+    if (begin == end)
+        return 0;
+
+    T max_iter = begin;
+
+    size_t max_index = 0;
+    size_t index     = 0;
+
+    for (T iter = begin; iter != end; ++iter, ++index)
+    {
+        if (*iter > *max_iter)
+        {
+            max_iter  = iter;
+            max_index = index;
+        }
+    }
+
+    return max_index;
+}
+
 } // namespace cpu
-#endif // MAIN_POSTPROCESS_H
+#endif
