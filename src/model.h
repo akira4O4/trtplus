@@ -9,6 +9,7 @@
 #include "map"
 #include "memory"
 #include "result.hpp"
+#include "unordered_map"
 #include "utils.h"
 #include "vector"
 
@@ -106,14 +107,16 @@ class Model
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
 
-    std::vector<result::NCHW> inputs_{};
-    std::vector<result::NCHW> output_{};
+    std::unordered_map<int, result::NCHW> inputs_{};
+    std::unordered_map<int, result::NCHW> outputs_{};
 
   public:
     Model() = default;
     ~Model();
 
-    explicit Model(const std::string& model_path, int device, const std::string& mode);
+    explicit Model(const std::string& model_path);
+
+    explicit Model(const std::string& model_path, int device);
 
     void init();
 
@@ -123,13 +126,11 @@ class Model
 
     void create_stream();
 
-    void check_dynamic();
+    inline std::unordered_map<int, result::NCHW> get_inputs() { return inputs_; };
 
-    inline std::vector<result::NCHW> get_inputs() { return inputs_; };
+    inline std::unordered_map<int, result::NCHW> get_outputs() { return outputs_; };
 
-    inline std::vector<result::NCHW> get_outputs() { return output_; };
-
-    inline void set_model_path(std::string path) { model_path_ = std::move(path); };
+    inline void set_model_path(const std::string& path) { model_path_ = std::move(path); };
 
     inline cudaStream_t get_stream() { return stream_; };
 
@@ -145,37 +146,25 @@ class Model
 
     void reset();
 
-    bool set_binding_dims(const std::string& name, nv::Dims dims);
+    nv::Dims get_binding_dims(uchar index);
 
     bool set_binding_dims(uchar index, nv::Dims dims);
 
-    nv::Dims get_binding_dims(const std::string& name);
-
-    nv::Dims get_binding_dims(uchar index);
-
     bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 
-    inline void use_fp16()
-    {
-        use_fp16_ = true;
-        use_int8_ = false;
-    };
+    void decode_model_inputs();
 
-    inline void use_int8()
-    {
-        use_fp16_ = false;
-        use_int8_ = true;
-    };
+    void decode_model_outputs();
 
-    void decode_model_input();
+    void decode_model_bindings();
 
-    void decode_model_output();
+    void set_input_shape(uchar index, nvinfer1::Dims dims);
 
-    void decode_model_binding();
+    char const* idx2name(uchar index);
 
-    void check_model_type();
+    void decode_model_info();
 
-    void set_model_input_shape(nvinfer1::Dims dims);
+    void show_model_info();
 };
 
 } // namespace trt

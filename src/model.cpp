@@ -2,27 +2,23 @@
 #include "fstream"
 #include "iostream"
 #include "memory"
-#include "vector"
 #include <model.h>
 #include <utility>
 #include <utils.h>
-
-#include "NvInfer.h"
-#include "NvOnnxParser.h"
 
 namespace trt
 {
 namespace nv = nvinfer1;
 
-Model::Model(const std::string& model_path, int device, const std::string& mode)
+Model::Model(const std::string& model_path)
+{
+    model_path_ = std::move(model_path);
+}
+
+Model::Model(const std::string& model_path, int device)
 {
     model_path_ = std::move(model_path);
     device_     = device;
-
-    if (mode == "fp16")
-        use_fp16();
-    else if (mode == "int8")
-        use_int8();
 }
 
 Model::~Model()
@@ -44,7 +40,8 @@ void Model::init()
     create_stream();
     load_engine();
     build_model();
-    check_dynamic();
+    decode_model_info();
+    decode_model_bindings();
 
     INFO("Model Init Done.");
 }
@@ -96,16 +93,21 @@ void Model::build_model()
     context_ = std::shared_ptr<nv::IExecutionContext>(engine_->createExecutionContext(),
                                                       delete_pointer<nv::IExecutionContext>);
     assert(context_);
-
-    num_of_bindings_ = engine_->getNbIOTensors();
-
-    set_device(device_);
-
-    INFO("Build Model Done.");
 }
 
-void Model::check_dynamic(check_dynamic)
+void Model::decode_model_info()
 {
+    num_of_bindings_ = engine_->getNbIOTensors();
+
+    auto name = engine_->getIOTensorName(0);
+
+    if (engine_->getTensorDataType(name) == nvinfer1::DataType::kFLOAT)
+        is_fp32_ = true;
+    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kHALF)
+        is_fp16_ = true;
+    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kINT8)
+        is_int8_ = true;
+
     for (int i = 0; i < num_of_bindings_; ++i)
     {
         auto dims = get_binding_dims(i);
@@ -115,18 +117,7 @@ void Model::check_dynamic(check_dynamic)
             break;
         }
     }
-}
-
-void Model::check_model_type()
-{
-    auto name = engine_->getIOTensorName(0);
-    if (engine_->getTensorDataType(name) == nvinfer1::DataType::kFLOAT)
-        is_fp32_ = true;
-    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kHALF)
-        is_fp16_ = true;
-    else if (engine_->getTensorDataType(name) == nvinfer1::DataType::kINT8)
-        is_int8_ = true;
-}
+};
 
 bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
 {
@@ -140,36 +131,25 @@ void Model::reset()
     runtime_.reset();
 }
 
-nv::Dims Model::get_binding_dims(const std::string& name)
-{
-    return context_->getTensorShape(name.c_str());
-}
-
 nv::Dims Model::get_binding_dims(uchar index)
 {
-    auto name = engine_->getIOTensorName(index);
-    return context_->getTensorShape(name);
-}
-
-bool Model::set_binding_dims(const std::string& name, nv::Dims dims)
-{
-    return context_->setInputShape(name.c_str(), dims);
+    return context_->getTensorShape(idx2name(index));
 }
 
 bool Model::set_binding_dims(uchar index, nv::Dims dims)
 {
-    auto name = engine_->getIOTensorName(index);
-    return context_->setInputShape(name, dims);
+    return context_->setInputShape(idx2name(index), dims);
 }
 
 void Model::set_device(uchar device)
 {
+    assert(device >= 0);
     device_ = device;
     cudaSetDevice(device_);
     INFO("Set Device: %d.", device_);
 }
 
-void Model::decode_model_input()
+void Model::decode_model_inputs()
 {
     inputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
@@ -180,15 +160,14 @@ void Model::decode_model_input()
         if (mode == nv::TensorIOMode::kINPUT)
         {
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_.emplace_back(nchw);
+            inputs_[ i ]      = nchw;
         }
     }
-    INFO("Num Of Input: %d", inputs_.size());
 }
 
-void Model::decode_model_output()
+void Model::decode_model_outputs()
 {
-    output_.clear();
+    outputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
     {
         auto name = engine_->getIOTensorName(i);
@@ -197,36 +176,57 @@ void Model::decode_model_output()
         if (mode == nv::TensorIOMode::kOUTPUT)
         {
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            output_.emplace_back(nchw);
+            outputs_[ i ]     = nchw;
         }
     }
-    INFO("Num Of Output: %d", output_.size());
 }
 
-void Model::decode_model_binding()
+void Model::decode_model_bindings()
 {
-    inputs_.clear();
-    output_.clear();
+    decode_model_inputs();
+    decode_model_outputs();
+}
 
-    for (int i = 0; i < num_of_bindings_; ++i)
+char const* Model::idx2name(uchar index)
+{
+    return engine_->getIOTensorName(index);
+}
+
+void Model::set_input_shape(uchar index, nvinfer1::Dims dims)
+{
+    if (is_dynamic_)
     {
-        auto name = engine_->getIOTensorName(i);
-        auto mode = engine_->getTensorIOMode(name);
-        auto dims = context_->getTensorShape(name);
-
-        if (mode == nv::TensorIOMode::kINPUT)
-        {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_.emplace_back(nchw);
-        }
-        else if (mode == nv::TensorIOMode::kOUTPUT)
-        {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            output_.emplace_back(nchw);
-        }
+        set_binding_dims(index, dims);
+        decode_model_inputs();
     }
-    INFO("Num Of Input  : %d", inputs_.size());
-    INFO("Num Of Output : %d", output_.size());
+    else
+    {
+        INFO("Model is static,Can not set the input dims.");
+    }
+}
+
+void Model::show_model_info()
+{
+    INFO("Model path: %s", model_path_.c_str());
+    INFO("Device: %d", device_);
+
+    if (is_dynamic_)
+        INFO("Model is dynamic");
+    else
+        INFO("Model is static");
+
+    if (is_int8_)
+        INFO("Model Int8: True");
+    else if (is_fp16_)
+        INFO("Model FP16: True");
+    else if (is_fp32_)
+        INFO("Model FP32: True");
+
+    INFO("Num of bindings: %d", num_of_bindings_);
+    for (const auto item : inputs_)
+        item.second.info();
+    for (const auto item : outputs_)
+        item.second.info();
 }
 
 } // namespace trt

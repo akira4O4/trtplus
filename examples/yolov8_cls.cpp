@@ -1,10 +1,11 @@
+#include "../src/cpu/postprocess.h"
+#include "../src/cpu/preprocess.h"
 #include "../src/memory.h"
 #include "../src/model.h"
 #include "../src/precision.h"
 #include "../src/utils.h"
+#include "NvInfer.h"
 #include "chrono"
-#include "cpu/postprocess.h"
-#include "cpu/preprocess.h"
 #include "iostream"
 #include "unistd.h"
 #include "vector"
@@ -19,36 +20,25 @@ void yolov8_cls()
     std::string mode        = kDefaultMode;
     int         device      = kDefaultDevice;
     int         batch       = 1;
-
-    std::cout << "Model       : " << model_path << std::endl;
-    std::cout << "Images Dir  : " << images_dir << std::endl;
-    std::cout << "Device      : " << device << std::endl;
-    std::cout << "Batch       : " << batch << std::endl;
-    std::cout << "Mode        : " << mode << std::endl;
+    int         channel     = 3;
+    int         height      = 224;
+    int         width       = 224;
 
     //-------------------------------------------------------------------------
 
-    auto model = trt::Model(model_path, device, mode);
+    auto model = trt::Model(model_path, device);
     model.init();
+    model.show_model_info();
 
-    if (model.is_dynamic())
-    {
-        model.decode_input();
-        result::NCHW input = model.get_inputs()[ 0 ];
-        input.info();
-        nvinfer1::Dims4 dims(batch, input.c, input.h, input.w);
-        model.set_binding_dims(input.name, dims);
-    }
+    nvinfer1::Dims4 dims(batch, channel, height, width);
+    model.set_input_shape(0, dims);
+    return;
 
     auto stream = model.get_stream();
-    model.decode_binding();
 
     result::NCHW input_shape  = model.get_inputs()[ 0 ];
     result::NCHW output_shape = model.get_outputs()[ 0 ];
-    input_shape.info();
-    output_shape.info();
 
-    //----------------------------------------------------------------------
     size_t input_size  = input_shape.NxCxHxW(kFLOAT32);
     size_t output_size = 0;
 

@@ -4,7 +4,7 @@
 
 #include "precision.h"
 
-half fp32_to_bf16(float value)
+bfloat16_t fp32_to_bf16(float value)
 {
     union {
         unsigned int u;
@@ -19,7 +19,7 @@ half fp32_to_bf16(float value)
     //    return static_cast<unsigned short>(temp >> 16);
 }
 
-float bf16_to_fp32(half value)
+float bf16_to_fp32(bfloat16_t value)
 {
     union {
         unsigned int u;
@@ -34,7 +34,7 @@ float bf16_to_fp32(half value)
     //    return result;
 }
 
-half fp32_to_fp16(float value)
+float16_t fp32_to_fp16(float value)
 {
     uint32_t temp;
     std::memcpy(&temp, &value, sizeof(temp));
@@ -67,7 +67,7 @@ uint8_t fp32_to_int8(float value)
     return static_cast<int>(std::round(value));
 }
 
-float fp16_to_fp32(short value)
+float fp16_to_fp32(float16_t value)
 {
     uint32_t sign     = (value & 0x8000) << 16;
     uint32_t exponent = (value & 0x7C00) >> 10;

@@ -4,7 +4,9 @@
 
 #ifndef MAIN_RESULT_HPP
 #define MAIN_RESULT_HPP
+
 #include "iostream"
+#include "precision.h"
 #include "utils.h"
 #include <chrono>
 #include <ctime>
@@ -65,18 +67,23 @@ struct NCHW
 {
     std::string name;
 
-    int    idx = -1;
-    int    bs  = 0;
-    int    c   = 0;
-    int    h   = 0;
-    int    w   = 0;
-    size_t NxC(size_t byte = kINT8) const { return bs * c * byte; };
+    int idx = -1;
+    int bs  = 0;
+    int c   = 0;
+    int h   = 0;
+    int w   = 0;
 
-    size_t HxW(size_t byte = kINT8) const { return w * h * byte; };
+    size_t NxC() const { return bs * c; };
+    size_t NxC(size_t byte) const { return bs * c * byte; };
 
-    size_t CxHxW(size_t byte = kINT8) const { return c * w * h * byte; };
+    size_t HxW() const { return w * h; };
+    size_t HxW(size_t byte) const { return w * h * byte; };
 
-    size_t NxCxHxW(size_t byte = kINT8) const { return bs * c * w * h * byte; };
+    size_t CxHxW() const { return c * w * h; };
+    size_t CxHxW(size_t byte) const { return c * w * h * byte; };
+
+    size_t NxCxHxW() const { return bs * c * w * h; };
+    size_t NxCxHxW(size_t byte) const { return bs * c * w * h * byte; };
 
     void info() const
     {
