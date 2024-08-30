@@ -1,11 +1,10 @@
 #ifndef MEMORY_MANAGER_H
 #define MEMORY_MANAGER_H
 
+#include "iostream"
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <utils.h>
-
-#include "iostream"
 
 #define H2H cudaMemcpyHostToHost
 #define D2D cudaMemcpyDeviceToDevice

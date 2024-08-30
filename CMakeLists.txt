@@ -26,6 +26,7 @@ message("PROJECT_SOURCE_DIR: " ${PROJECT_SOURCE_DIR})
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/src
+        ${PROJECT_SOURCE_DIR}/examples
         ${TRT_HOME}/include
         ${OpenCV_INCLUDE_DIRS}
         ${CUDA_HOME}/include
@@ -42,12 +43,17 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 -O0 -Xcompiler -fPIC -g -w ${
 
 file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
+set(
+        cpp_srcs ${cpp_srcs}
+        ${PROJECT_SOURCE_DIR}/examples/yolov8_cls.cpp
+        ${PROJECT_SOURCE_DIR}/examples/yolov8_det.cpp
+        ${PROJECT_SOURCE_DIR}/examples/yolov8_seg.cpp
+        ${PROJECT_SOURCE_DIR}/examples/yolov10_det.cpp
+)
+
 message(${cpp_srcs})
 
-add_executable(
-        ${PROJECT_NAME} ${cpp_srcs} main.cpp
-        examples/yolov8_cls.cpp
-)
+add_executable(${PROJECT_NAME} ${cpp_srcs} main.cpp)
 
 target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)
