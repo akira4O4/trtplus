@@ -82,27 +82,6 @@ bool is_exists(std::string& name)
     return f.good();
 }
 
-static void cuda_check(cudaError_t err, const char* file, const int line)
-{
-    if (err != cudaSuccess)
-    {
-        printf("ERROR: %s:%d, ", file, line);
-        printf("code:%s, reason:%s\n", cudaGetErrorName(err), cudaGetErrorString(err));
-        exit(1);
-    }
-}
-
-static void kernel_check(const char* file, const int line)
-{
-    cudaError_t err = cudaPeekAtLastError();
-    if (err != cudaSuccess)
-    {
-        printf("ERROR: %s:%d, ", file, line);
-        printf("code:%s, reason:%s\n", cudaGetErrorName(err), cudaGetErrorString(err));
-        exit(1);
-    }
-}
-
 std::vector<std::string> load_label_from_txt(const std::string& file_name)
 {
     std::vector<std::string> classes;

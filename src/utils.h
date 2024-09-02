@@ -20,10 +20,6 @@ constexpr float kDefaultConf = 0.5;
 
 #define DEPRECATED [[deprecated]]
 
-#define CUDA_CHECK(call) cuda_check(call, __FILE__, __LINE__)
-
-#define KERNEL_CHECK(call) kernel_check(__FILE__, __LINE__)
-
 #define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
 
 #define checkRuntime(call)                                                                                             \
@@ -80,10 +76,6 @@ std::vector<cv::Mat> get_images(const std::vector<cv::String>& image_paths);
 void save_image(const std::string&, const std::vector<cv::Mat>& images, const std::string& pattern = "jpg");
 
 bool is_exists(std::string& name);
-
-static void cuda_check(cudaError_t err, const char* file, const int line);
-
-static void kernel_check(const char* file, const int line);
 
 std::vector<std::string> load_label_from_txt(const std::string& file_name);
 
