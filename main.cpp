@@ -14,8 +14,8 @@
 int main()
 {
     std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/yolov8n-cls-1x3x224x224.engine";
-    std::string images_dir  = "assets/images/imagenet";
-    std::string labels_file = "assets/imagenet_classes.txt";
+    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/images/imagenet";
+    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/imagenet_classes.txt";
     std::string mode        = kDefaultMode;
     int         device      = kDefaultDevice;
     int         batch       = 1;
@@ -31,22 +31,14 @@ int main()
     nvinfer1::Dims4 dims(batch, channel, height, width);
     model.set_input_dims(0, dims); // Auto check model is dynamic or not.
 
-    std::cout << model.get_input_size() << std::endl;
-    std::cout << model.get_output_size() << std::endl;
-
-    auto stream = model.get_stream();
-
     // Prepare input and output memory ---------------------------------------------------------------------------------
     result::NCHW input_shape  = model.get_inputs()[ 0 ];
-    result::NCHW output_shape = model.get_outputs()[ 0 ];
+    result::NCHW output_shape = model.get_outputs()[ 1 ];
 
-    size_t input_size = input_shape.NxCxHxW(kFLOAT32);
-    output_shape.info();
+    size_t input_size  = input_shape.NxCxHxW(kFLOAT32);
     size_t output_size = output_shape.NxC(kFLOAT32);
 
-    std::cout << input_size << std::endl;
-    std::cout << output_size << std::endl;
-
+    auto stream              = model.get_stream();
     auto model_input_memory  = std::make_shared<trt::Memory>(input_shape.idx, input_size, true, stream);
     auto model_output_memory = std::make_shared<trt::Memory>(output_shape.idx, output_size, true, stream);
 

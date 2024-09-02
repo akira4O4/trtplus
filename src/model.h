@@ -88,7 +88,7 @@ class NVLogger : public nv::ILogger
 
 class Model
 {
-  private:
+  public:
     bool use_fp16_ = false;
     bool use_int8_ = false;
 
@@ -126,27 +126,27 @@ class Model
 
     void create_stream();
 
-    inline std::unordered_map<uchar, result::NCHW> get_inputs() { return inputs_; };
+    inline std::unordered_map<uchar, result::NCHW> get_inputs() const { return inputs_; };
 
-    inline std::unordered_map<uchar, result::NCHW> get_outputs() { return outputs_; };
+    inline std::unordered_map<uchar, result::NCHW> get_outputs() const { return outputs_; };
 
-    inline uchar get_input_size() { return inputs_.size(); };
+    inline uchar get_input_size() const { return inputs_.size(); };
 
-    inline uchar get_output_size() { return outputs_.size(); };
+    inline uchar get_output_size() const { return outputs_.size(); };
 
-    inline void set_model_path(const std::string& path) { model_path_ = std::move(path); };
+    inline void set_model_path(const std::string& path) { model_path_ = path; };
 
-    inline cudaStream_t get_stream() { return stream_; };
+    inline cudaStream_t get_stream() const { return stream_; };
 
     inline void set_stream(cudaStream_t stream) { stream_ = stream; };
 
     inline int get_device() const { return device_; };
 
+    void set_device(uchar device);
+
     inline int get_num_of_binding() const { return num_of_bindings_; };
 
     inline bool is_dynamic() const { return is_dynamic_; };
-
-    void set_device(uchar device);
 
     void reset();
 
@@ -166,7 +166,7 @@ class Model
 
     char const* idx2name(uchar index);
 
-    void decode_model_info();
+    void decode_model_status();
 
     void show_model_info();
 };

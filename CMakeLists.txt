@@ -45,7 +45,6 @@ file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 set(
         cpp_srcs
         ${cpp_srcs}
-        ${PROJECT_SOURCE_DIR}/examples/yolov8_cls.cpp
         main.cpp
 )
 message(STATUS "Source files: ${cpp_srcs}")

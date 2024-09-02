@@ -12,12 +12,12 @@ namespace nv = nvinfer1;
 
 Model::Model(const std::string& model_path)
 {
-    model_path_ = std::move(model_path);
+    model_path_ = model_path;
 }
 
 Model::Model(const std::string& model_path, uchar device)
 {
-    model_path_ = std::move(model_path);
+    model_path_ = model_path;
     device_     = device;
 }
 
@@ -40,7 +40,7 @@ void Model::init()
     create_stream();
     load_engine();
     build_model();
-    decode_model_info();
+    decode_model_status();
     decode_model_bindings();
 
     INFO("Model Init Done.");
@@ -95,7 +95,7 @@ void Model::build_model()
     assert(context_);
 }
 
-void Model::decode_model_info()
+void Model::decode_model_status()
 {
     num_of_bindings_ = engine_->getNbIOTensors();
 
@@ -139,7 +139,6 @@ nv::Dims Model::get_binding_dims(uchar index)
 bool Model::set_binding_dims(uchar index, nv::Dims dims)
 {
     auto item = inputs_.find(index);
-
     if (item == inputs_.end())
     {
         return false;
@@ -233,9 +232,9 @@ void Model::show_model_info()
         INFO("Model FP32: True");
 
     INFO("Num of bindings: %d", num_of_bindings_);
-    for (const auto item : inputs_)
+    for (const auto& item : inputs_)
         item.second.info();
-    for (const auto item : outputs_)
+    for (const auto& item : outputs_)
         item.second.info();
 }
 
