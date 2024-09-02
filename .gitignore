@@ -9,3 +9,4 @@ build/
 /temp/
 3rdparty/
 src/version.h
+/main

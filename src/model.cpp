@@ -15,7 +15,7 @@ Model::Model(const std::string& model_path)
     model_path_ = std::move(model_path);
 }
 
-Model::Model(const std::string& model_path, int device)
+Model::Model(const std::string& model_path, uchar device)
 {
     model_path_ = std::move(model_path);
     device_     = device;
@@ -138,7 +138,17 @@ nv::Dims Model::get_binding_dims(uchar index)
 
 bool Model::set_binding_dims(uchar index, nv::Dims dims)
 {
-    return context_->setInputShape(idx2name(index), dims);
+    auto item = inputs_.find(index);
+
+    if (item == inputs_.end())
+    {
+        return false;
+    }
+    else
+    {
+        auto name = idx2name(item->first);
+        return context_->setInputShape(name, dims);
+    }
 }
 
 void Model::set_device(uchar device)
@@ -192,16 +202,16 @@ char const* Model::idx2name(uchar index)
     return engine_->getIOTensorName(index);
 }
 
-void Model::set_input_shape(uchar index, nvinfer1::Dims dims)
+void Model::set_input_dims(uchar index, nvinfer1::Dims dims)
 {
     if (is_dynamic_)
     {
-        set_binding_dims(index, dims);
+        assert(set_binding_dims(index, dims));
         decode_model_inputs();
     }
     else
     {
-        INFO("Model is static,Can not set the input dims.");
+        INFO("Model is static. can not set the input dims.");
     }
 }
 

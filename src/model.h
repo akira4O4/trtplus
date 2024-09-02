@@ -107,8 +107,8 @@ class Model
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
 
-    std::unordered_map<int, result::NCHW> inputs_{};
-    std::unordered_map<int, result::NCHW> outputs_{};
+    std::unordered_map<uchar, result::NCHW> inputs_{};
+    std::unordered_map<uchar, result::NCHW> outputs_{};
 
   public:
     Model() = default;
@@ -116,7 +116,7 @@ class Model
 
     explicit Model(const std::string& model_path);
 
-    explicit Model(const std::string& model_path, int device);
+    explicit Model(const std::string& model_path, uchar device);
 
     void init();
 
@@ -126,9 +126,13 @@ class Model
 
     void create_stream();
 
-    inline std::unordered_map<int, result::NCHW> get_inputs() { return inputs_; };
+    inline std::unordered_map<uchar, result::NCHW> get_inputs() { return inputs_; };
 
-    inline std::unordered_map<int, result::NCHW> get_outputs() { return outputs_; };
+    inline std::unordered_map<uchar, result::NCHW> get_outputs() { return outputs_; };
+
+    inline uchar get_input_size() { return inputs_.size(); };
+
+    inline uchar get_output_size() { return outputs_.size(); };
 
     inline void set_model_path(const std::string& path) { model_path_ = std::move(path); };
 
@@ -158,7 +162,7 @@ class Model
 
     void decode_model_bindings();
 
-    void set_input_shape(uchar index, nvinfer1::Dims dims);
+    void set_input_dims(uchar index, nvinfer1::Dims dims);
 
     char const* idx2name(uchar index);
 

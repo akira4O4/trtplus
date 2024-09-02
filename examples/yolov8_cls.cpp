@@ -9,10 +9,9 @@
 #include "iostream"
 #include "unistd.h"
 #include "vector"
-#include "yolo.h"
 #include <opencv2/core/core.hpp>
 
-void yolov8_cls()
+int main()
 {
     std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/yolov8n-cls-1x3x224x224.engine";
     std::string images_dir  = "../assets/images/imagenet";
@@ -30,7 +29,10 @@ void yolov8_cls()
     model.show_model_info();
 
     nvinfer1::Dims4 dims(batch, channel, height, width);
-    model.set_input_shape(0, dims);
+    model.set_input_dims(0, dims); // Auto check model is dynamic or not.
+
+    std::cout << model.get_input_size() << std::endl;
+    std::cout << model.get_output_size() << std::endl;
 
     auto stream = model.get_stream();
 
@@ -38,8 +40,12 @@ void yolov8_cls()
     result::NCHW input_shape  = model.get_inputs()[ 0 ];
     result::NCHW output_shape = model.get_outputs()[ 0 ];
 
-    size_t input_size  = input_shape.NxCxHxW(kFLOAT32);
+    size_t input_size = input_shape.NxCxHxW(kFLOAT32);
+    output_shape.info();
     size_t output_size = output_shape.NxC(kFLOAT32);
+
+    std::cout << input_size << std::endl;
+    std::cout << output_size << std::endl;
 
     auto model_input_memory  = std::make_shared<trt::Memory>(input_shape.idx, input_size, true, stream);
     auto model_output_memory = std::make_shared<trt::Memory>(output_shape.idx, output_size, true, stream);

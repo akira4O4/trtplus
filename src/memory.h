@@ -18,12 +18,12 @@ namespace trt
 class Memory
 {
   private:
-    int          id_       = -1;
-    void*        host_     = nullptr;
-    void*        device_   = nullptr;
-    size_t       cpu_size_ = 0;
-    size_t       gpu_size_ = 0;
-    cudaStream_t stream_   = nullptr;
+    int          id_         = -1;
+    void*        host_ptr_   = nullptr;
+    void*        device_ptr_ = nullptr;
+    size_t       cpu_size_   = 0;
+    size_t       gpu_size_   = 0;
+    cudaStream_t stream_     = nullptr;
 
   public:
     Memory() = default;
@@ -53,20 +53,20 @@ class Memory
 
     void set_stream(cudaStream_t stream) { stream_ = stream; };
 
-    void* get_host_ptr() { return host_; };
+    void* get_host_ptr() { return host_ptr_; };
 
-    void* get_device_ptr() { return device_; };
+    void* get_device_ptr() { return device_ptr_; };
 
     template <typename T>
     T* get_host_ptr()
     {
-        return (T*) host_;
+        return (T*) host_ptr_;
     };
 
     template <typename T>
     T* get_device_ptr()
     {
-        return (T*) device_;
+        return (T*) device_ptr_;
     };
 
     void malloc_host_memory();
