@@ -67,7 +67,7 @@ int main()
         cv::Mat out;
 
         // pre-process
-        auto host_ptr = model_input_memory->get_host_ptr<float>();
+        auto host_ptr = model_input_memory->get_cpu_ptr<float>();
         for (int n = 0; n < input_shape.bs; ++n)
         {
             cv::Mat img = batch_images.at(n);
@@ -83,13 +83,13 @@ int main()
 
         // Forward -----------------------------------------------------------------------------------------------------
         model_input_memory->to_gpu();
-        void* bindings[ 2 ]{model_input_memory->get_device_ptr(), model_output_memory->get_device_ptr()};
+        void* bindings[ 2 ]{model_input_memory->get_gpu_ptr(), model_output_memory->get_gpu_ptr()};
         model.forward(bindings, stream, nullptr);
         model_output_memory->to_cpu();
 
         //--------------------------------------------------------------------------------------------------------------
 
-        auto  output_host_ptr = model_output_memory->get_host_ptr<float>();
+        auto  output_host_ptr = model_output_memory->get_cpu_ptr<float>();
         auto  nc              = output_shape.c;
         float cls_output[ nc ];
 

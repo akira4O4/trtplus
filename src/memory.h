@@ -6,24 +6,28 @@
 #include <cuda_runtime.h>
 #include <utils.h>
 
-#define H2H cudaMemcpyHostToHost
-#define D2D cudaMemcpyDeviceToDevice
-#define H2D cudaMemcpyHostToDevice
-#define D2H cudaMemcpyDeviceToHost
-#define ALIGN_SIZE 128
-
 namespace trt
 {
+
+constexpr uchar kAlignSize = 128;
+
+enum class MemcpyKind
+{
+    CPU2CPU = 0,
+    CPU2GPU = 1,
+    GPU2CPU = 2,
+    GPU2GPU = 3
+};
 
 class Memory
 {
   private:
-    int          id_         = -1;
-    void*        host_ptr_   = nullptr;
-    void*        device_ptr_ = nullptr;
-    size_t       cpu_size_   = 0;
-    size_t       gpu_size_   = 0;
-    cudaStream_t stream_     = nullptr;
+    int          id_       = -1;
+    void*        cpu_ptr_  = nullptr;
+    void*        gpu_ptr_  = nullptr;
+    size_t       cpu_size_ = 0;
+    size_t       gpu_size_ = 0;
+    cudaStream_t stream_   = nullptr;
 
   public:
     Memory() = default;
@@ -38,7 +42,7 @@ class Memory
 
     Memory& operator=(const Memory&) = delete;
 
-    ~Memory() { free_host_and_device_memory(); };
+    ~Memory() { free_all(); };
 
     inline int get_id() const { return id_; };
     inline int set_id(int id) { id_ = id; };
@@ -50,66 +54,58 @@ class Memory
     void set_gpu_size(size_t num_of_byte) { gpu_size_ = num_of_byte; };
 
     cudaStream_t get_stream() { return stream_; };
+    void         set_stream(cudaStream_t stream) { stream_ = stream; };
 
-    void set_stream(cudaStream_t stream) { stream_ = stream; };
-
-    void* get_host_ptr() { return host_ptr_; };
-
-    void* get_device_ptr() { return device_ptr_; };
+    void* get_cpu_ptr() { return cpu_ptr_; };
+    void* get_gpu_ptr() { return gpu_ptr_; };
 
     template <typename T>
-    T* get_host_ptr()
+    T* get_cpu_ptr()
     {
-        return (T*) host_ptr_;
+        return (T*) cpu_ptr_;
     };
 
     template <typename T>
-    T* get_device_ptr()
+    T* get_gpu_ptr()
     {
-        return (T*) device_ptr_;
+        return (T*) gpu_ptr_;
     };
 
-    void malloc_host_memory();
+    void malloc_cpu_memory();
 
-    void malloc_device_memory();
+    void malloc_gpu_memory();
 
-    void malloc_host_memory(size_t num_of_byte);
+    void malloc_cpu_memory(size_t num_of_byte);
 
-    void malloc_device_memory(size_t num_of_byte);
+    void malloc_gpu_memory(size_t num_of_byte);
 
-    void malloc_host_and_device_memory();
+    void malloc_cpu_and_gpu_memory();
 
     void to_cpu();
 
-    void to_other_cpu(void* out, int size = -1, size_t offset = 0);
-
     void to_gpu();
 
-    void to_other_gpu(void* out, int size = -1, size_t offset = 0);
+    void to_cpu(void* out, size_t size, MemcpyKind mode);
 
-    void cpu2cpu(void* out, int size = -1, size_t offset = 0);
+    void to_gpu(void* out, size_t size, MemcpyKind mode);
 
-    void gpu2gpu(void* out, int size = -1, size_t offset = 0);
+    void free_gpu_memory();
 
-    void free_device_memory();
+    void free_cpu_memory();
 
-    void free_host_memory();
-
-    void free_host_and_device_memory();
-
-    static float float16_to_float32(half value);
-
-    static half float32_to_float16(float value);
+    void free_all();
 
     static size_t align_size(size_t sz, size_t n);
 
     void sync();
 
-    void assert_host();
+    void assert_cpu();
 
-    void assert_device();
+    void assert_gpu();
 
-    void* offset_ptr(void* ptr, size_t offset);
+    void* offset_cpu_ptr(size_t offset);
+
+    void* offset_gpu_ptr(size_t offset);
 };
 
 } // namespace trt

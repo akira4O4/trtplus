@@ -92,7 +92,7 @@ class Model
     bool use_fp16_ = false;
     bool use_int8_ = false;
 
-    uchar device_          = 0;
+    uchar device_          = kDefaultDevice;
     bool  is_int8_         = false;
     bool  is_fp16_         = false;
     bool  is_fp32_         = true;

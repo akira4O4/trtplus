@@ -13,7 +13,7 @@ Memory::Memory(size_t num_of_byte, bool alloc)
     cpu_size_ = num_of_byte;
     gpu_size_ = num_of_byte;
     if (alloc)
-        malloc_host_and_device_memory();
+        malloc_cpu_and_gpu_memory();
 }
 
 Memory::Memory(int id, size_t num_of_byte, bool alloc)
@@ -22,7 +22,7 @@ Memory::Memory(int id, size_t num_of_byte, bool alloc)
     cpu_size_ = num_of_byte;
     gpu_size_ = num_of_byte;
     if (alloc)
-        malloc_host_and_device_memory();
+        malloc_cpu_and_gpu_memory();
 }
 
 Memory::Memory(int id, size_t num_of_byte, bool alloc, cudaStream_t stream)
@@ -32,204 +32,182 @@ Memory::Memory(int id, size_t num_of_byte, bool alloc, cudaStream_t stream)
     gpu_size_ = num_of_byte;
     stream_   = stream;
     if (alloc)
-        malloc_host_and_device_memory();
+        malloc_cpu_and_gpu_memory();
 }
 
-void Memory::malloc_host_memory()
+void Memory::malloc_cpu_memory()
 {
     if (cpu_size_ == 0)
     {
         INFO("Malloc num_of_byte == 0.");
         return;
     }
-    if (host_ptr_ != nullptr)
+    if (cpu_ptr_ != nullptr)
     {
-        free_host_memory();
+        free_cpu_memory();
     }
 
-    //    cpu_size_= align_size(cpu_size_,ALIGN_SIZE);
-    checkRuntime(cudaMallocHost(&host_ptr_, cpu_size_));
-    Assert(host_ptr_);
+    CHECK_CUDA_RUNTIME(cudaMallocHost(&cpu_ptr_, cpu_size_));
+    ASSERT_PTR(cpu_ptr_);
     INFO("Malloc Host Mem: %d Byte.", cpu_size_);
 }
 
-void Memory::malloc_host_memory(size_t num_of_byte)
+void Memory::malloc_cpu_memory(size_t num_of_byte)
 {
     if (num_of_byte > cpu_size_)
     {
         cpu_size_ = num_of_byte;
-        malloc_host_memory();
+        malloc_cpu_memory();
     }
 }
 
-void Memory::malloc_device_memory()
+void Memory::malloc_gpu_memory()
 {
     if (gpu_size_ == 0)
     {
         INFO("Malloc num_of_byte == 0.");
     }
-    if (device_ptr_ != nullptr)
+    if (gpu_ptr_ != nullptr)
     {
-        free_device_memory();
+        free_gpu_memory();
     }
 
-    //    gpu_size_ = align_size(gpu_size_, ALIGN_SIZE);
-    checkRuntime(cudaMalloc(&device_ptr_, gpu_size_));
+    CHECK_CUDA_RUNTIME(cudaMalloc(&gpu_ptr_, gpu_size_));
+    ASSERT_PTR(gpu_ptr_);
     INFO("Malloc Device Mem: %d Byte.", gpu_size_);
 }
 
-void Memory::malloc_device_memory(size_t num_of_byte)
+void Memory::malloc_gpu_memory(size_t num_of_byte)
 {
     if (num_of_byte > gpu_size_)
     {
         gpu_size_ = num_of_byte;
-        malloc_device_memory();
+        malloc_gpu_memory();
     }
 }
 
-void Memory::malloc_host_and_device_memory()
+void Memory::malloc_cpu_and_gpu_memory()
 {
-    malloc_host_memory();
-    malloc_device_memory();
+    malloc_cpu_memory();
+    malloc_gpu_memory();
 }
 
-void Memory::free_device_memory()
+void Memory::free_gpu_memory()
 {
-    checkRuntime(cudaFree(device_ptr_));
-    device_ptr_ = nullptr;
-    gpu_size_   = 0;
+    CHECK_CUDA_RUNTIME(cudaFree(gpu_ptr_));
+    gpu_size_ = 0;
+    gpu_ptr_  = nullptr;
     INFO("Free Device Memory.");
 }
 
-void Memory::free_host_memory()
+void Memory::free_cpu_memory()
 {
-    checkRuntime(cudaFreeHost(host_ptr_));
-    host_ptr_ = nullptr;
+    CHECK_CUDA_RUNTIME(cudaFreeHost(cpu_ptr_));
     cpu_size_ = 0;
+    cpu_ptr_  = nullptr;
     INFO("Free Host Memory.");
 }
 
-void Memory::free_host_and_device_memory()
+void Memory::free_all()
 {
-    free_device_memory();
-    free_host_memory();
+    free_gpu_memory();
+    free_cpu_memory();
 }
 
+// inner cpu -> inner gpu
 void Memory::to_gpu()
 {
-    assert_host();
-    assert_device();
-    checkRuntime(cudaMemcpyAsync(device_ptr_, host_ptr_, cpu_size_, H2D, stream_));
+    assert_cpu();
+    assert_gpu();
+    ASSERT_OP(cpu_size_ == gpu_size_);
+    CHECK_CUDA_RUNTIME(cudaMemcpyAsync(gpu_ptr_, cpu_ptr_, cpu_size_, cudaMemcpyHostToDevice, stream_));
     sync();
 }
 
+// inner gpu-> inner cpu
 void Memory::to_cpu()
 {
-    assert_host();
-    assert_device();
-    checkRuntime(cudaMemcpyAsync(host_ptr_, device_ptr_, gpu_size_, D2H, stream_));
+    assert_cpu();
+    assert_gpu();
+    ASSERT_OP(cpu_size_ == gpu_size_);
+    CHECK_CUDA_RUNTIME(cudaMemcpyAsync(cpu_ptr_, gpu_ptr_, gpu_size_, cudaMemcpyDeviceToHost, stream_));
     sync();
 }
 
-void Memory::to_other_gpu(void* out, int size, size_t offset)
+// inner cpu -> gpu
+// inner gpu-> gpu
+void Memory::to_gpu(void* out, size_t size, MemcpyKind mode)
 {
-    if (size <= 0)
-        size = cpu_size_;
-
-    assert_host();
-    assert(size <= cpu_size_);
-
-    void* in = offset_ptr(host_ptr_, offset);
-
-    checkRuntime(cudaMemcpyAsync(out, in, size, D2H, stream_));
+    ASSERT_PTR(out);
+    if (mode == MemcpyKind::CPU2GPU)
+    {
+        assert_cpu();
+        ASSERT_OP(0 < size <= cpu_size_);
+        CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, cpu_ptr_, size, cudaMemcpyHostToDevice, stream_));
+    }
+    else if (mode == MemcpyKind::GPU2GPU)
+    {
+        assert_gpu();
+        ASSERT_OP(0 < size <= gpu_size_);
+        CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, gpu_ptr_, size, cudaMemcpyDeviceToDevice, stream_));
+    }
     sync();
 }
-
-void Memory::to_other_cpu(void* out, int size, size_t offset)
+// inner gpu->cpu
+// inner cpu->cpu
+void Memory::to_cpu(void* out, size_t size, MemcpyKind mode)
 {
-    if (size <= 0)
-        size = gpu_size_;
-
-    assert_device();
-
-    assert(size <= gpu_size_);
-
-    void* in = offset_ptr(device_ptr_, offset);
-
-    checkRuntime(cudaMemcpyAsync(out, in, size, D2H, stream_));
+    ASSERT_PTR(out);
+    if (mode == MemcpyKind::GPU2CPU)
+    {
+        assert_gpu();
+        ASSERT_OP(0 <= size <= gpu_size_);
+        CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, gpu_ptr_, size, cudaMemcpyDeviceToHost, stream_));
+    }
+    else if (mode == MemcpyKind::CPU2CPU)
+    {
+        assert_cpu();
+        ASSERT_OP(0 <= size <= cpu_size_);
+        CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, cpu_ptr_, size, cudaMemcpyHostToHost, stream_));
+    }
     sync();
-}
-
-void Memory::cpu2cpu(void* out, int size, size_t offset)
-{
-    if (size <= 0)
-        size = cpu_size_;
-
-    assert_host();
-
-    assert(size <= cpu_size_);
-
-    void* in = offset_ptr(host_ptr_, offset);
-
-    checkRuntime(cudaMemcpyAsync(out, in, size, H2H, stream_));
-    sync();
-};
-
-void Memory::gpu2gpu(void* out, int size, size_t offset)
-{
-    if (size <= 0)
-        size = gpu_size_;
-
-    assert_device();
-
-    assert(size <= gpu_size_);
-
-    void* in = offset_ptr(device_ptr_, offset);
-
-    checkRuntime(cudaMemcpyAsync(out, in, size, D2D, stream_));
-    sync();
-}
-
-float Memory::float16_to_float32(half value)
-{
-    return __half2float(*reinterpret_cast<__half*>(&value));
-}
-
-half Memory::float32_to_float16(float value)
-{
-    auto val = __float2half(value);
-    return val;
 }
 
 void Memory::sync()
 {
-    checkRuntime(cudaStreamSynchronize(stream_));
+    CHECK_CUDA_RUNTIME(cudaStreamSynchronize(stream_));
 }
 
-void Memory::assert_host()
+void Memory::assert_cpu()
 {
-    assert(host_ptr_);
-    assert(cpu_size_ != 0);
+    ASSERT_PTR(cpu_ptr_);
+    ASSERT_OP(cpu_size_ != 0);
 }
 
-void Memory::assert_device()
+void Memory::assert_gpu()
 {
-    assert(device_ptr_);
-    assert(gpu_size_ != 0);
+    ASSERT_PTR(gpu_ptr_);
+    ASSERT_OP(gpu_size_ != 0);
 }
 
-void* Memory::offset_ptr(void* ptr, size_t offset)
+void* Memory::offset_cpu_ptr(size_t offset)
 {
-    if (offset != 0)
-        return (void*) ((char*) ptr + offset);
-    else
-        return device_ptr_;
+    assert_cpu();
+    ASSERT_OP(offset <= cpu_size_);
+    return (void*) ((char*) cpu_ptr_ + offset);
+}
+
+void* Memory::offset_gpu_ptr(size_t offset)
+{
+    assert_gpu();
+    ASSERT_OP(offset <= gpu_size_);
+    return (void*) ((char*) gpu_ptr_ + offset);
 }
 
 size_t Memory::align_size(size_t sz, size_t n)
 {
-    assert(sz != 0);
-    assert(n != 0);
+    ASSERT_OP(sz != 0);
+    ASSERT_OP(n != 0);
     return (sz + n - 1) & -n;
 }
 

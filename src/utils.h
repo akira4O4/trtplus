@@ -22,7 +22,7 @@ constexpr float kDefaultConf = 0.5;
 
 #define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
 
-#define checkRuntime(call)                                                                                             \
+#define CHECK_CUDA_RUNTIME(call)                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
         auto __call_ret_code__ = (call);                                                                               \
@@ -43,24 +43,23 @@ constexpr float kDefaultConf = 0.5;
         checkRuntime(cudaPeekAtLastError());                                                                           \
     } while (0)
 
-#define Assert(op)                                                                                                     \
+#define ASSERT_OP(op)                                                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
-        bool cond = !(!(op));                                                                                          \
-        if (!cond)                                                                                                     \
+        bool state = !(!(op));                                                                                         \
+        if (!state)                                                                                                    \
         {                                                                                                              \
-            INFO("Assert failed, " #op);                                                                               \
+            fprintf(stderr, "[%s:%d]: Assert failed: %s", __FILE__, __LINE__, #op);                                    \
             abort();                                                                                                   \
         }                                                                                                              \
     } while (0)
 
-#define Assertf(op, ...)                                                                                               \
+#define ASSERT_PTR(ptr)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
-        bool cond = !(!(op));                                                                                          \
-        if (!cond)                                                                                                     \
+        if (ptr == nullptr)                                                                                            \
         {                                                                                                              \
-            INFO("Assert failed, " #op " : " __VA_ARGS__);                                                             \
+            fprintf(stderr, "[%s:%d]: Null pointer detected: %s", __FILE__, __LINE__, #ptr);                           \
             abort();                                                                                                   \
         }                                                                                                              \
     } while (0)

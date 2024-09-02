@@ -48,7 +48,7 @@ void Model::init()
 
 void Model::create_stream()
 {
-    checkRuntime(cudaStreamCreate(&stream_));
+    CHECK_CUDA_RUNTIME(cudaStreamCreate(&stream_));
     assert(stream_);
     INFO("Init CUDA Stream");
 }
