@@ -9,7 +9,11 @@
 namespace trt
 {
 
+#define ALIGNED(bytes) __attribute__((__aligned__(bytes)))
+#define DE_ALIGNED __attribute__((packed))
+
 constexpr uchar kAlignSize = 128;
+
 
 enum class MemcpyKind
 {

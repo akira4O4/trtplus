@@ -13,6 +13,7 @@
 
 int main()
 {
+
     std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/yolov8n-cls-1x3x224x224.engine";
     std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/images/imagenet";
     std::string labels_file = "/home/seeking/llf/code/trtplus/assets/imagenet_classes.txt";
