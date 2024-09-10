@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.6)
-project(main VERSION 1.0.0 LANGUAGES C CXX)
+project(trtplus VERSION 1.0.0 LANGUAGES C CXX)
 
+set(TARGET_NAME "main.bin")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CUDA_ARCHITECTURES 75)
 
 configure_file(version.h.in "${PROJECT_SOURCE_DIR}/src/version.h" @ONLY)
-message("PROJECT_NAME:          " ${PROJECT_NAME})
+message("TARGET_NAME:          " ${TARGET_NAME})
 message("PROJECT_VERSION:       " ${PROJECT_VERSION})
 message("PROJECT_VERSION_MAJOR: " ${PROJECT_VERSION_MAJOR})
 message("PROJECT_VERSION_MINOR: " ${PROJECT_VERSION_MINOR})
@@ -27,7 +28,6 @@ message("PROJECT_SOURCE_DIR: " ${PROJECT_SOURCE_DIR})
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/src
-        ${PROJECT_SOURCE_DIR}/cuda
         ${TRT_HOME}/include
         ${OpenCV_INCLUDE_DIRS}
         ${CUDA_HOME}/include
@@ -43,14 +43,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O0 -Wfatal-errors -pth
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 -O0 -Xcompiler -fPIC -g -w ${CUDA_GEN_CODE}")
 
 file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
-file(GLOB_RECURSE cu_srcs ${PROJECT_SOURCE_DIR}/cuda/*.cu)
+file(GLOB_RECURSE cuda_srcs ${PROJECT_SOURCE_DIR}/src/*.cu)
 
 message(STATUS "Cpp source files: ${cpp_srcs}")
-message(STATUS "Cu source files: ${cu_srcs}")
+message(STATUS "Cuda source files: ${cuda_srcs}")
 
-add_executable(${PROJECT_NAME} ${cpp_srcs} ${cu_srcs} main.cpp)
+add_executable(${TARGET_NAME} ${cpp_srcs} ${cuda_srcs} main.cpp)
 
-target_link_libraries(${PROJECT_NAME} pthread)
-target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)
-target_link_libraries(${PROJECT_NAME} cuda cublas cudart)
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(${TARGET_NAME} pthread)
+target_link_libraries(${TARGET_NAME} nvinfer nvinfer_plugin)
+target_link_libraries(${TARGET_NAME} cuda cublas cudart)
+target_link_libraries(${TARGET_NAME} ${OpenCV_LIBS})

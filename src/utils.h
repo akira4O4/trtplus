@@ -13,10 +13,9 @@ constexpr uchar   kDefaultBatch   = 1;
 constexpr uchar   kDefaultChannel = 3;
 constexpr uchar   kDefaultHeight  = 224;
 constexpr uchar   kDefaultWidth   = 224;
+constexpr float   kDefaultIoU     = 0.5;
+constexpr float   kDefaultConf    = 0.5;
 const std::string kDefaultMode    = "fp32";
-
-constexpr float kDefaultIoU  = 0.5;
-constexpr float kDefaultConf = 0.5;
 
 #define DEPRECATED [[deprecated]]
 
@@ -25,22 +24,13 @@ constexpr float kDefaultConf = 0.5;
 #define CHECK_CUDA_RUNTIME(call)                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        auto __call_ret_code__ = (call);                                                                               \
-        if (__call_ret_code__ != cudaSuccess)                                                                          \
+        auto ret_code = (call);                                                                                        \
+        if (ret_code != cudaSuccess)                                                                                   \
         {                                                                                                              \
-            INFO("CUDA Runtime error💥 %s # %s, code = %s [ %d ]", #call, cudaGetErrorString(__call_ret_code__),       \
-                 cudaGetErrorName(__call_ret_code__), __call_ret_code__);                                              \
+            INFO("CUDA Runtime error💥 %s # %s, code = %s [ %d ]", #call, cudaGetErrorString(ret_code),                \
+                 cudaGetErrorName(ret_code), ret_code);                                                                \
             abort();                                                                                                   \
         }                                                                                                              \
-    } while (0)
-
-#define checkKernel(...)                                                                                               \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        {                                                                                                              \
-            (__VA_ARGS__);                                                                                             \
-        }                                                                                                              \
-        checkRuntime(cudaPeekAtLastError());                                                                           \
     } while (0)
 
 #define ASSERT_OP(op)                                                                                                  \

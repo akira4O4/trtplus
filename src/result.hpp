@@ -42,18 +42,18 @@ struct Box
     float       score = 0.0;
     std::string label;
 };
+struct Object
+{
 
+    int   label;
+    float prob;
+};
 struct Detection
 {
     int              idx = -1;
     std::string      name;
     std::vector<Box> boxes = {};
 
-    Detection()
-        : idx(-1)
-        , name("")
-        , boxes()
-    {}
     Detection(int idx, std::string name)
         : idx(idx)
         , name(std::move(name))

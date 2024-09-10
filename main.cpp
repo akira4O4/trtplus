@@ -1,5 +1,6 @@
 #include "NvInfer.h"
 #include "chrono"
+#include "cuda_runtime.h"
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
@@ -100,18 +101,16 @@ int main()
         }
         else
         {
+            for (int k = 0; k < input_shape.bs; k++)
+            {
+                output_host_ptr += k * nc;
+                cpu::softmax(output_host_ptr, cls_output, nc, true);
+
+                // TODO:Bad function
+                //                cpu::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
+            }
             INFO("Done.");
         }
-
-        //        for (int k = 0; k < input_shape.bs; k++)
-        //        {
-        //            //            output_host_ptr += k * nc;
-        //            //            postprocess::softmax(output_host_ptr, cls_output, nc, true);
-        //
-        //            // TODO:Bad function
-        //            postprocess::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
-        //        }
-        //        std::cout << std::endl;
 
         batch_images.clear();
         batch_images_path.clear();
