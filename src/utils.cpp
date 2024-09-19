@@ -37,7 +37,7 @@ std::string file_name(const std::string& path, bool include_suffix)
     return path.substr(p, u - p);
 }
 
-void info(const char* file, int line, const char* fmt, ...)
+void info_(const char* file, int line, const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
@@ -48,6 +48,43 @@ void info(const char* file, int line, const char* fmt, ...)
     fprintf(stdout, "%s\n", buffer);
 }
 
+void info(const char* file, int line, const char* format, ...)
+{
+    // 打印文件名和行号
+    fprintf(stdout, "INFO: [%s:%d]: ", file, line);
+
+    // 可变参数处理
+    va_list args;
+    va_start(args, format);
+
+    // 打印格式化的错误信息
+    vfprintf(stdout, format, args);
+
+    // 结束变参的处理
+    va_end(args);
+
+    // 换行
+    fprintf(stdout, "\n");
+}
+
+void error(const char* file, int line, const char* format, ...)
+{
+    // 打印文件名和行号
+    fprintf(stderr, "ERROR: [%s:%d]: ", file, line);
+
+    // 可变参数处理
+    va_list args;
+    va_start(args, format);
+
+    // 打印格式化的错误信息
+    vfprintf(stderr, format, args);
+
+    // 结束变参的处理
+    va_end(args);
+
+    // 换行
+    fprintf(stderr, "\n");
+}
 std::vector<cv::String> get_image_paths(const std::string& path, const std::string& pattern)
 {
     cv::String              path_pattern = path + "/*." + pattern;

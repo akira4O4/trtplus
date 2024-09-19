@@ -62,6 +62,9 @@ class NVLogger : public nv::ILogger
 
     void log(Severity severity, const char* msg) noexcept override
     {
+        if (severity > reportableSeverity)
+            return;
+
         switch (severity)
         {
         case nvinfer1::ILogger::Severity::kINTERNAL_ERROR:
@@ -82,6 +85,9 @@ class NVLogger : public nv::ILogger
         }
         std::cerr << msg << std::endl;
     }
+
+  private:
+    Severity reportableSeverity = Severity::kWARNING;
 };
 
 //-----------------------------------------------------------

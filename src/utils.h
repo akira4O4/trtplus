@@ -19,9 +19,11 @@ const std::string kDefaultMode    = "fp32";
 
 #define DEPRECATED [[deprecated]]
 
-#define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
+// #define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
 
-#define ERROR(...)
+#define INFO(format, ...) info(__FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define ERROR(format, ...) error(__FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #define CHECK_CUDA_RUNTIME(call)                                                                                       \
     do                                                                                                                 \
@@ -57,6 +59,8 @@ const std::string kDefaultMode    = "fp32";
     } while (0)
 
 void info(const char* file, int line, const char* fmt, ...);
+
+void error(const char* file, int line, const char* format, ...);
 
 std::string file_name(const std::string& path, bool include_suffix);
 
