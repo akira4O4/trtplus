@@ -21,6 +21,8 @@ const std::string kDefaultMode    = "fp32";
 
 #define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
 
+#define ERROR(...)
+
 #define CHECK_CUDA_RUNTIME(call)                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
