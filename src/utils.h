@@ -37,7 +37,7 @@ const std::string kDefaultMode    = "fp32";
         }                                                                                                              \
     } while (0)
 
-#define ASSERT_OP(op)                                                                                                  \
+#define ASSERT_TRUE(op)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
         bool state = !(!(op));                                                                                         \

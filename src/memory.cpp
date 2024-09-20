@@ -119,7 +119,7 @@ void Memory::to_gpu()
 {
     assert_cpu();
     assert_gpu();
-    ASSERT_OP(cpu_size_ == gpu_size_);
+    ASSERT_TRUE(cpu_size_ == gpu_size_);
     CHECK_CUDA_RUNTIME(cudaMemcpyAsync(gpu_ptr_, cpu_ptr_, cpu_size_, cudaMemcpyHostToDevice, stream_));
     sync();
 }
@@ -129,7 +129,7 @@ void Memory::to_cpu()
 {
     assert_cpu();
     assert_gpu();
-    ASSERT_OP(cpu_size_ == gpu_size_);
+    ASSERT_TRUE(cpu_size_ == gpu_size_);
     CHECK_CUDA_RUNTIME(cudaMemcpyAsync(cpu_ptr_, gpu_ptr_, gpu_size_, cudaMemcpyDeviceToHost, stream_));
     sync();
 }
@@ -139,35 +139,38 @@ void Memory::to_cpu()
 void Memory::to_gpu(void* out, size_t size, MemcpyKind mode)
 {
     ASSERT_PTR(out);
+    ASSERT_TRUE(mode == MemcpyKind::CPU2GPU || mode == MemcpyKind::GPU2GPU);
     if (mode == MemcpyKind::CPU2GPU)
     {
         assert_cpu();
-        ASSERT_OP(0 < size <= cpu_size_);
+        ASSERT_TRUE(0 < size <= cpu_size_);
         CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, cpu_ptr_, size, cudaMemcpyHostToDevice, stream_));
     }
     else if (mode == MemcpyKind::GPU2GPU)
     {
         assert_gpu();
-        ASSERT_OP(0 < size <= gpu_size_);
+        ASSERT_TRUE(0 < size <= gpu_size_);
         CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, gpu_ptr_, size, cudaMemcpyDeviceToDevice, stream_));
     }
     sync();
 }
+
 // inner gpu->cpu
 // inner cpu->cpu
 void Memory::to_cpu(void* out, size_t size, MemcpyKind mode)
 {
     ASSERT_PTR(out);
+    ASSERT_TRUE(mode == MemcpyKind::GPU2CPU || mode == MemcpyKind::CPU2CPU);
     if (mode == MemcpyKind::GPU2CPU)
     {
         assert_gpu();
-        ASSERT_OP(0 <= size <= gpu_size_);
+        ASSERT_TRUE(0 <= size <= gpu_size_);
         CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, gpu_ptr_, size, cudaMemcpyDeviceToHost, stream_));
     }
     else if (mode == MemcpyKind::CPU2CPU)
     {
         assert_cpu();
-        ASSERT_OP(0 <= size <= cpu_size_);
+        ASSERT_TRUE(0 <= size <= cpu_size_);
         CHECK_CUDA_RUNTIME(cudaMemcpyAsync(out, cpu_ptr_, size, cudaMemcpyHostToHost, stream_));
     }
     sync();
@@ -181,33 +184,33 @@ void Memory::sync()
 void Memory::assert_cpu()
 {
     ASSERT_PTR(cpu_ptr_);
-    ASSERT_OP(cpu_size_ != 0);
+    ASSERT_TRUE(cpu_size_ != 0);
 }
 
 void Memory::assert_gpu()
 {
     ASSERT_PTR(gpu_ptr_);
-    ASSERT_OP(gpu_size_ != 0);
+    ASSERT_TRUE(gpu_size_ != 0);
 }
 
 void* Memory::offset_cpu_ptr(size_t offset)
 {
     assert_cpu();
-    ASSERT_OP(offset <= cpu_size_);
+    ASSERT_TRUE(offset <= cpu_size_);
     return (void*) ((char*) cpu_ptr_ + offset);
 }
 
 void* Memory::offset_gpu_ptr(size_t offset)
 {
     assert_gpu();
-    ASSERT_OP(offset <= gpu_size_);
+    ASSERT_TRUE(offset <= gpu_size_);
     return (void*) ((char*) gpu_ptr_ + offset);
 }
 
 size_t Memory::align_size(size_t sz, size_t n)
 {
-    ASSERT_OP(sz != 0);
-    ASSERT_OP(n != 0);
+    ASSERT_TRUE(sz != 0);
+    ASSERT_TRUE(n != 0);
     return (sz + n - 1) & -n;
 }
 

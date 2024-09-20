@@ -77,6 +77,38 @@ void chw2hwc(cv::Mat& img, float* out)
     }
 }
 
+cv::Mat bgr2rgb(const cv::Mat& input)
+{
+
+    cv::Mat output;
+    cv::cvtColor(input, output, cv::COLOR_BGR2RGB);
+
+    return output;
+}
+cv::Mat rgb2bgr(const cv::Mat& input)
+{
+
+    cv::Mat output;
+    cv::cvtColor(input, output, cv::COLOR_RGB2BGR);
+
+    return output;
+}
+cv::Mat gray2rgb(const cv::Mat& input)
+{
+
+    cv::Mat output;
+    cv::cvtColor(input, output, cv::COLOR_GRAY2RGB);
+
+    return output;
+}
+cv::Mat gray2bgr(const cv::Mat& input)
+{
+
+    cv::Mat output;
+    cv::cvtColor(input, output, cv::COLOR_GRAY2BGR);
+
+    return output;
+}
 cv::Mat image2rgb(const cv::Mat& input)
 {
     cv::Mat output;

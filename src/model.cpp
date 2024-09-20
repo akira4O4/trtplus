@@ -100,7 +100,6 @@ void Model::decode_model_status()
 #if NV_TENSORRT_MINOR < 5
     num_of_bindings_ = engine_->getNbBindings();
     auto data_type   = engine_->getBindingDataType(0);
-
 #elif NV_TENSORRT_MINOR >= 5
     num_of_bindings_ = engine_->getNbIOTensors();
     auto data_type   = engine_->getTensorDataType(engine_->getIOTensorName(0));
@@ -249,7 +248,7 @@ void Model::decode_model_bindings()
 char const* Model::idx2name(uchar index)
 {
 #if NV_TENSORRT_MINOR < 5
-
+    return engine_->getBindingName(index);
 #elif NV_TENSORRT_MINOR >= 5
     return engine_->getIOTensorName(index);
 #endif

@@ -50,27 +50,18 @@ void info_(const char* file, int line, const char* fmt, ...)
 
 void info(const char* file, int line, const char* format, ...)
 {
-    // 打印文件名和行号
-    fprintf(stdout, "INFO: [%s:%d]: ", file, line);
-
-    // 可变参数处理
+    fprintf(stdout, "INFO:[%s:%d]: ", file, line);
     va_list args;
     va_start(args, format);
-
-    // 打印格式化的错误信息
     vfprintf(stdout, format, args);
-
-    // 结束变参的处理
     va_end(args);
-
-    // 换行
     fprintf(stdout, "\n");
 }
 
 void error(const char* file, int line, const char* format, ...)
 {
     // 打印文件名和行号
-    fprintf(stderr, "ERROR: [%s:%d]: ", file, line);
+    fprintf(stderr, "ERROR:[%s:%d]: ", file, line);
 
     // 可变参数处理
     va_list args;
@@ -125,7 +116,7 @@ std::vector<std::string> load_label_from_txt(const std::string& file_name)
     std::ifstream            ifs(file_name, std::ios::in);
     if (!ifs.is_open())
     {
-        std::cerr << file_name << " is not found, pls refer to README and download it." << std::endl;
+        ERROR("%s is not found, pls refer to README and download it.", file_name.c_str());
         assert(0);
     }
     std::string s;

@@ -14,8 +14,7 @@
 
 int main()
 {
-    std::string model_path =
-        "/home/seeking/llf/code/trtplus/assets/yolo/trt820+/yolov8n-cls-1x3x224x224.fp32.static.engine";
+    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/trt850+/yolov8n-cls-1x3x224x224.engine";
     std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/images/imagenet";
     std::string labels_file = "/home/seeking/llf/code/trtplus/assets/imagenet_classes.txt";
     std::string mode        = kDefaultMode;
@@ -68,7 +67,8 @@ int main()
 
         cv::Mat out;
 
-        // pre-process
+        // Pre-process
+        //[CxHxW][CxHxW][CxHxW]....
         auto host_ptr = model_input_memory->get_cpu_ptr<float>();
         for (int n = 0; n < input_shape.bs; ++n)
         {
@@ -84,33 +84,26 @@ int main()
         }
 
         // Forward -----------------------------------------------------------------------------------------------------
-        model_input_memory->to_gpu();
+        model_input_memory->to_gpu(); // move data from cpu to gpu
         void* bindings[ 2 ]{model_input_memory->get_gpu_ptr(), model_output_memory->get_gpu_ptr()};
         model.forward(bindings, stream, nullptr);
         model_output_memory->to_cpu();
 
         //--------------------------------------------------------------------------------------------------------------
 
-        auto  output_host_ptr = model_output_memory->get_cpu_ptr<float>();
-        auto  nc              = output_shape.c;
-        float cls_output[ nc ];
+        auto output_cpu_ptr = model_output_memory->get_cpu_ptr<float>();
+        ASSERT_PTR(output_cpu_ptr);
+        auto nc = output_shape.c;
 
-        if (output_host_ptr == nullptr)
+        for (int n = 0; n < input_shape.bs; ++n)
         {
-            INFO("Output Is Null.");
-        }
-        else
-        {
-            for (int k = 0; k < input_shape.bs; k++)
-            {
-                output_host_ptr += k * nc;
-                cpu::softmax(output_host_ptr, cls_output, nc, true);
+            size_t             offset     = n * nc;
+            std::vector<float> cls_output = cpu::softmax(output_cpu_ptr + offset, nc, true);
+            size_t             max_index  = cpu::argmax(cls_output);
 
-                // TODO:Bad function
-                //                cpu::classification(output_host_ptr + k * nc, nc, thr, labels, output_dir);
-            }
-            INFO("Done.");
+            INFO("Prediction >>> %s:%f", labels[ max_index ].c_str(), cls_output[ max_index ]);
         }
+        INFO("Infer Done.\n");
 
         batch_images.clear();
         batch_images_path.clear();

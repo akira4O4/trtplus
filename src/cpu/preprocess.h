@@ -17,6 +17,14 @@ void hwc2chw_v2(cv::Mat& img, float* out);
 
 void chw2hwc(cv::Mat& img, float* out);
 
+cv::Mat bgr2rgb(const cv::Mat& input);
+
+cv::Mat rgb2bgr(const cv::Mat& input);
+
+cv::Mat gray2rgb(const cv::Mat& input);
+
+cv::Mat gray2bgr(const cv::Mat& input);
+
 cv::Mat image2rgb(const cv::Mat& input);
 
 cv::Mat image2bgr(const cv::Mat& input);
