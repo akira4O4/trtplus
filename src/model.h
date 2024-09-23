@@ -113,6 +113,7 @@ class Model
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
 
+    std::unordered_map<uchar, result::NCHW> bindings_{};
     std::unordered_map<uchar, result::NCHW> inputs_{};
     std::unordered_map<uchar, result::NCHW> outputs_{};
 
@@ -131,6 +132,10 @@ class Model
     void build_model();
 
     void create_stream();
+
+    inline result::NCHW get_input(uchar index) { return inputs_[ index ]; };
+
+    inline result::NCHW get_output(uchar index) { return outputs_[ index ]; };
 
     inline std::unordered_map<uchar, result::NCHW> get_inputs() const { return inputs_; };
 

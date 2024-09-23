@@ -17,24 +17,16 @@ int main()
     std::string model_path  = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-1x3x28x28.static.fp32.static.engine";
     std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/mnist/test";
     std::string labels_file = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-lables.txt";
-    std::string mode        = kDefaultMode;
     int         device      = kDefaultDevice;
-    int         batch       = 1;
-    int         channel     = 3;
-    int         height      = 224;
-    int         width       = 224;
 
     // Prepare Model ---------------------------------------------------------------------------------------------------
     auto model = trt::Model(model_path, device);
     model.init();
     model.show_model_info();
 
-    nvinfer1::Dims4 dims(batch, channel, height, width);
-    model.set_input_dims(0, dims); // Auto check model is dynamic or not.
-
     // Prepare input and output memory ---------------------------------------------------------------------------------
-    result::NCHW input_shape  = model.get_inputs()[ 0 ];
-    result::NCHW output_shape = model.get_outputs()[ 1 ];
+    result::NCHW input_shape  = model.get_input(0);
+    result::NCHW output_shape = model.get_output(1);
 
     size_t input_size  = input_shape.NxCxHxW(kFLOAT32);
     size_t output_size = output_shape.NxC(kFLOAT32);
