@@ -14,9 +14,9 @@
 
 int main()
 {
-    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/yolo/trt850+/yolov8n-cls-1x3x224x224.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/images/imagenet";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/imagenet_classes.txt";
+    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-1x3x28x28.static.fp32.static.engine";
+    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/mnist/test";
+    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-lables.txt";
     std::string mode        = kDefaultMode;
     int         device      = kDefaultDevice;
     int         batch       = 1;
@@ -48,7 +48,7 @@ int main()
 
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 
-    std::vector<cv::String> image_paths = get_image_paths(images_dir, "jpg");
+    std::vector<cv::String> image_paths = get_image_paths(images_dir, "png");
     std::vector<cv::Mat>    images      = get_images(image_paths);
 
     std::vector<cv::Mat>     batch_images;

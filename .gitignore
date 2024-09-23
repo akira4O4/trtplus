@@ -5,6 +5,9 @@ build/
 *.pth
 *.onnx
 *.engine
+*.png
+*.jpg
+*.txt
 /cmake-build-debug/
 /temp/
 3rdparty/
