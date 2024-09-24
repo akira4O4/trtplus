@@ -11,7 +11,7 @@
 
 int main(int argc, char const* argv[])
 {
-    auto device = kDefaultDevice;
+    auto device      = kDefaultDevice;
     auto model_path  = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-1x3x28x28.trt850.fp32.static.engine";
     auto images_dir  = "/home/seeking/llf/code/trtplus/assets/mnist/test";
     auto labels_file = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-lables.txt";
@@ -83,7 +83,8 @@ int main(int argc, char const* argv[])
 
         for (int k = 0; k < input_shape.bs; k++)
         {
-            auto max_idx = cpu::argmax(output_host_ptr, nc);
+            size_t offset  = k * nc;
+            auto   max_idx = cpu::argmax(output_host_ptr + offset, nc);
             INFO("Prediction-> label: %s | score:%f", labels[ max_idx ].c_str(), output_host_ptr[ max_idx ]);
         }
         INFO("Done.\n");
