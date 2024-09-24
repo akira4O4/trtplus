@@ -11,11 +11,10 @@
 
 int main(int argc, char const* argv[])
 {
-    auto device = kDefaultDevice;
-    //    auto model_path  = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-1x3x28x28.trt820.fp32.static.engine";
-    auto model_path  = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-1x3x28x28.trt850.fp32.static.engine";
-    auto images_dir  = "/home/seeking/llf/code/trtplus/assets/mnist/test";
-    auto labels_file = "/home/seeking/llf/code/trtplus/assets/mnist/mnist-lables.txt";
+    auto device      = kDefaultDevice;
+    auto model_path  = "";
+    auto images_dir  = "";
+    auto labels_file = "";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);

@@ -1,29 +1,23 @@
-#include <utility>
-
 #include "NvInfer.h"
 #include "fstream"
 #include "iostream"
 #include "memory"
-#include "vector"
 #include <model.h>
+#include <utility>
 #include <utils.h>
-
-#include "NvInfer.h"
-#include "NvOnnxParser.h"
 
 namespace trt
 {
-namespace nv = nvinfer1;
 
-Model::Model(std::string model_path, int device, const std::string& mode)
+Model::Model(const std::string& model_path)
 {
-    model_path_ = std::move(model_path);
-    device_     = device;
+    model_path_ = model_path;
+}
 
-    if (mode == "fp16")
-        use_fp16();
-    else if (mode == "int8")
-        use_int8();
+Model::Model(const std::string& model_path, uchar device)
+{
+    model_path_ = model_path;
+    device_     = device;
 }
 
 Model::~Model()
@@ -45,15 +39,16 @@ void Model::init()
     create_stream();
     load_engine();
     build_model();
-    check_dynamic();
+    decode_model_status();
+    decode_model_bindings();
 
     INFO("Model Init Done.");
 }
 
 void Model::create_stream()
 {
-    checkRuntime(cudaStreamCreate(&stream_));
-    assert(stream_);
+    CHECK_CUDA_RUNTIME(cudaStreamCreate(&stream_));
+    ASSERT_PTR(stream_);
     INFO("Init CUDA Stream");
 }
 
@@ -86,54 +81,47 @@ void Model::build_model()
         INFO("Engine_data == nullptr or engine_size == 0");
         return;
     }
-    runtime_ =
-        std::shared_ptr<nv::IRuntime>(nv::createInferRuntime(NVLogger::instance()), delete_pointer<nv::IRuntime>);
-    assert(runtime_);
+    runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(NVLogger::instance()),
+                                                   delete_pointer<nvinfer1::IRuntime>);
+    ASSERT_PTR(runtime_);
 
-    engine_ = std::shared_ptr<nv::ICudaEngine>(runtime_->deserializeCudaEngine(data_.data(), data_.size(), nullptr),
-                                               delete_pointer<nv::ICudaEngine>);
-    assert(engine_);
+    engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(
+        runtime_->deserializeCudaEngine(data_.data(), data_.size(), nullptr), delete_pointer<nvinfer1::ICudaEngine>);
+    ASSERT_PTR(engine_);
 
-    context_ = std::shared_ptr<nv::IExecutionContext>(engine_->createExecutionContext(),
-                                                      delete_pointer<nv::IExecutionContext>);
-    assert(context_);
-
-    num_of_bindings_ = engine_->getNbBindings();
-
-    set_device(device_);
-
-    INFO("Build Model Done.");
+    context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(),
+                                                            delete_pointer<nvinfer1::IExecutionContext>);
+    ASSERT_PTR(context_);
 }
 
-void Model::check_dynamic()
+void Model::decode_model_status()
 {
+
+#if NV_TENSORRT_MINOR < 5
+    num_of_bindings_ = engine_->getNbBindings();
+    auto data_type   = engine_->getBindingDataType(0);
+#elif NV_TENSORRT_MINOR >= 5
+    num_of_bindings_ = engine_->getNbIOTensors();
+    auto data_type   = engine_->getTensorDataType(engine_->getIOTensorName(0));
+#endif
+
+    if (data_type == nvinfer1::DataType::kFLOAT)
+        is_fp32_ = true;
+    else if (data_type == nvinfer1::DataType::kHALF)
+        is_fp16_ = true;
+    else if (data_type == nvinfer1::DataType::kINT8)
+        is_int8_ = true;
+
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto name = engine_->getBindingName(i);
         auto dims = get_binding_dims(i);
         if (dims.d[ 0 ] == -1)
+        {
             is_dynamic_ = true;
+            break;
+        }
     }
-
-    if (is_dynamic_)
-        INFO("Model Is Dynamic.");
-    else
-        INFO("Model Is Static.");
-}
-
-std::vector<int> Model::dims_to_vector(const nv::Dims dims)
-{
-    std::vector<int> vec(dims.d, dims.d + dims.nbDims);
-    return vec;
-}
-
-nv::Dims Model::vector_to_dims(const std::vector<int>& data)
-{
-    nv::Dims d;
-    std::memcpy(d.d, data.data(), sizeof(int) * data.size());
-    d.nbDims = data.size();
-    return d;
-}
+};
 
 bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
 {
@@ -147,40 +135,98 @@ void Model::reset()
     runtime_.reset();
 }
 
-nv::Dims Model::get_binding_dims(int idx)
+nvinfer1::Dims Model::get_binding_dims(uchar index)
 {
-    return context_->getBindingDimensions(idx);
+#if NV_TENSORRT_MINOR < 5
+    return context_->getBindingDimensions(index);
+#elif NV_TENSORRT_MINOR >= 5
+    return context_->getTensorShape(idx2name(index));
+#endif
 }
 
-bool Model::set_binding_dims(int idx, nv::Dims dims)
+bool Model::set_binding_dims(uchar index, nvinfer1::Dims dims)
 {
-    return context_->setBindingDimensions(idx, dims);
-}
-
-nv::DataType Model::get_binding_datatype(int idx)
-{
-    return engine_->getBindingDataType(idx);
-}
-
-void Model::print_dims(nv::Dims dims)
-{
-    std::cout << "[ ";
-
-    for (int i = 0; i < dims.nbDims; i++)
+    auto item = inputs_.find(index);
+    if (item == inputs_.end())
     {
-        std::cout << dims.d[ i ] << " ";
+        return false;
     }
-    std::cout << " ]\n";
+    else
+    {
+        auto name = idx2name(item->first);
+
+#if NV_TENSORRT_MINOR < 5
+        return context_->setBindingDimensions(index, dims);
+#elif NV_TENSORRT_MINOR >= 5
+        return context_->setInputShape(name, dims);
+#endif
+    }
 }
 
-void Model::set_device(const int device)
+void Model::set_device(uchar device)
 {
+    ASSERT_TRUE(device >= 0);
     device_ = device;
     cudaSetDevice(device_);
     INFO("Set Device: %d.", device_);
 }
 
-void Model::decode_input()
+#if NV_TENSORRT_MINOR < 5
+void Model::decode_model_bindings()
+{
+    inputs_.clear();
+    outputs_.clear();
+    bindings_.clear();
+    for (int i = 0; i < num_of_bindings_; ++i)
+    {
+        if (engine_->bindingIsInput(i))
+        {
+            auto         name = engine_->getBindingName(i);
+            auto         dims = context_->getBindingDimensions(i);
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            inputs_[ i ]      = nchw;
+            bindings_[ i ]    = nchw;
+        }
+        else
+        {
+
+            auto         name = engine_->getBindingName(i);
+            auto         dims = context_->getBindingDimensions(i);
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            outputs_[ i ]     = nchw;
+            bindings_[ i ]    = nchw;
+        }
+    }
+}
+#elif NV_TENSORRT_MINOR >= 5
+void Model::decode_model_bindings()
+{
+    bindings_.clear();
+    inputs_.clear();
+    outputs_.clear();
+    for (int i = 0; i < num_of_bindings_; ++i)
+    {
+        auto name = engine_->getIOTensorName(i);
+        auto mode = engine_->getTensorIOMode(name);
+        auto dims = context_->getTensorShape(name);
+        if (mode == nvinfer1::TensorIOMode::kINPUT)
+        {
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            inputs_[ i ]      = nchw;
+            bindings_[ i ]    = nchw;
+        }
+        else if (mode == nvinfer1::TensorIOMode::kOUTPUT)
+        {
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            outputs_[ i ]     = nchw;
+            bindings_[ i ]    = nchw;
+        }
+    }
+}
+#endif
+
+#if NV_TENSORRT_MINOR < 5
+void Model::decode_model_inputs()
 {
     inputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
@@ -190,15 +236,34 @@ void Model::decode_input()
             auto         name = engine_->getBindingName(i);
             auto         dims = context_->getBindingDimensions(i);
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_.emplace_back(nchw);
+            inputs_[ i ]      = nchw;
         }
     }
-    INFO("Num Of Input: %d", inputs_.size());
 }
 
-void Model::decode_output()
+#elif NV_TENSORRT_MINOR >= 5
+void Model::decode_model_inputs()
 {
-    output_.clear();
+    inputs_.clear();
+    for (int i = 0; i < num_of_bindings_; ++i)
+    {
+        auto name  = engine_->getIOTensorName(i);
+        auto dims  = context_->getTensorShape(name);
+        auto mode  = engine_->getTensorIOMode(name);
+        auto input = nvinfer1::TensorIOMode::kINPUT;
+        if (mode == input)
+        {
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            inputs_[ i ]      = nchw;
+        }
+    }
+}
+#endif
+
+#if NV_TENSORRT_MINOR < 5
+void Model::decode_model_outputs()
+{
+    outputs_.clear();
     for (int i = 0; i < num_of_bindings_; ++i)
     {
         if (!engine_->bindingIsInput(i))
@@ -207,35 +272,72 @@ void Model::decode_output()
             auto         name = engine_->getBindingName(i);
             auto         dims = context_->getBindingDimensions(i);
             result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            output_.emplace_back(nchw);
+            outputs_[ i ]     = nchw;
         }
-        INFO("Num Of Output: %d", output_.size());
+    }
+}
+#elif NV_TENSORRT_MINOR >= 5
+void Model::decode_model_outputs()
+{
+    outputs_.clear();
+    for (int i = 0; i < num_of_bindings_; ++i)
+    {
+        auto name = engine_->getIOTensorName(i);
+        auto mode = engine_->getTensorIOMode(name);
+        auto dims = context_->getTensorShape(name);
+        if (mode == nvinfer1::TensorIOMode::kOUTPUT)
+        {
+            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            outputs_[ i ]     = nchw;
+        }
+    }
+}
+#endif
+
+char const* Model::idx2name(uchar index)
+{
+#if NV_TENSORRT_MINOR < 5
+    return engine_->getBindingName(index);
+#elif NV_TENSORRT_MINOR >= 5
+    return engine_->getIOTensorName(index);
+#endif
+}
+
+void Model::set_input_dims(uchar index, nvinfer1::Dims dims)
+{
+    if (is_dynamic_)
+    {
+        ASSERT_TRUE(set_binding_dims(index, dims));
+        decode_model_inputs();
+    }
+    else
+    {
+        INFO("Model is static. can not set the input dims.");
     }
 }
 
-void Model::decode_binding()
+void Model::show_model_info()
 {
-    inputs_.clear();
-    output_.clear();
+    INFO("Model path: %s", model_path_.c_str());
+    INFO("Device: %d", device_);
 
-    for (int i = 0; i < num_of_bindings_; ++i)
-    {
-        auto name = engine_->getBindingName(i);
-        auto dims = context_->getBindingDimensions(i);
+    if (is_dynamic_)
+        INFO("Model is dynamic");
+    else
+        INFO("Model is static");
 
-        if (engine_->bindingIsInput(i))
-        {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_.emplace_back(nchw);
-        }
-        else
-        {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            output_.emplace_back(nchw);
-        }
-    }
-    INFO("Num Of Input  : %d", inputs_.size());
-    INFO("Num Of Output : %d", output_.size());
+    if (is_int8_)
+        INFO("Model Int8: True");
+    else if (is_fp16_)
+        INFO("Model FP16: True");
+    else if (is_fp32_)
+        INFO("Model FP32: True");
+
+    INFO("Num of bindings: %d", num_of_bindings_);
+    for (const auto& item : inputs_)
+        item.second.info();
+    for (const auto& item : outputs_)
+        item.second.info();
 }
 
 } // namespace trt

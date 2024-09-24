@@ -7,74 +7,68 @@
 #include <opencv2/core/core.hpp>
 #include <utility>
 
-const uchar       kDefaultChannel = 3;
-const uchar       kDefaultDevice  = 0;
-const uchar       kDefaultBatch   = 1;
-const uchar       kDefaultHeight  = 224;
-const uchar       kDefaultWidth   = 224;
+constexpr uchar   kDefaultDevice  = 0;
+constexpr uchar   kDefaultBatch   = 1;
+constexpr uchar   kDefaultChannel = 3;
+constexpr uchar   kDefaultHeight  = 224;
+constexpr uchar   kDefaultWidth   = 224;
+constexpr float   kDefaultIoU     = 0.5;
+constexpr float   kDefaultConf    = 0.5;
 const std::string kDefaultMode    = "fp32";
-const float       kDefaultIOU     = 0.5;
-const float       kDefaultCONF    = 0.5;
+
+typedef unsigned short bfloat16_t;
+typedef unsigned short float16_t;
+typedef float          float32_t;
+
+constexpr uint8_t kINT8     = sizeof(uint8_t);    // size=1
+constexpr uint8_t kFLOAT16  = sizeof(float16_t);  // size=2
+constexpr uint8_t kBFLOAT16 = sizeof(bfloat16_t); // size=2
+constexpr uint8_t kFLOAT32  = sizeof(float32_t);  // size=4
 
 #define DEPRECATED [[deprecated]]
 
-#define INT8 sizeof(char)
-#define UINT8 sizeof(uchar)
-
-#define FLOAT16 sizeof(half)
-#define FLOAT32 sizeof(float)
-#define HALF FLOAT16
-
-#define CUDA_CHECK(call) cuda_check(call, __FILE__, __LINE__)
-
-#define KERNEL_CHECK(call) kernel_check(__FILE__, __LINE__)
-
 #define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
 
-#define checkRuntime(call)                                                                                             \
+#define ERROR(format, ...) error(__FILE__, __LINE__, format, ##__VA_ARGS__)
+
+#define CHECK_CUDA_RUNTIME(call)                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        auto __call_ret_code__ = (call);                                                                               \
-        if (__call_ret_code__ != cudaSuccess)                                                                          \
+        auto ret_code = (call);                                                                                        \
+        if (ret_code != cudaSuccess)                                                                                   \
         {                                                                                                              \
-            INFO("CUDA Runtime error💥 %s # %s, code = %s [ %d ]", #call, cudaGetErrorString(__call_ret_code__),       \
-                 cudaGetErrorName(__call_ret_code__), __call_ret_code__);                                              \
+            INFO("CUDA Runtime error💥 %s # %s, code = %s [ %d ]", #call, cudaGetErrorString(ret_code),                \
+                 cudaGetErrorName(ret_code), ret_code);                                                                \
             abort();                                                                                                   \
         }                                                                                                              \
     } while (0)
 
-#define checkKernel(...)                                                                                               \
+#define ASSERT_TRUE(op)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
+        bool state = !(!(op));                                                                                         \
+        if (!state)                                                                                                    \
         {                                                                                                              \
-            (__VA_ARGS__);                                                                                             \
-        }                                                                                                              \
-        checkRuntime(cudaPeekAtLastError());                                                                           \
-    } while (0)
-
-#define Assert(op)                                                                                                     \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        bool cond = !(!(op));                                                                                          \
-        if (!cond)                                                                                                     \
-        {                                                                                                              \
-            INFO("Assert failed, " #op);                                                                               \
+            fprintf(stderr, "[%s:%d]: Assert failed: %s", __FILE__, __LINE__, #op);                                    \
             abort();                                                                                                   \
         }                                                                                                              \
     } while (0)
 
-#define Assertf(op, ...)                                                                                               \
+#define ASSERT_PTR(ptr)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
-        bool cond = !(!(op));                                                                                          \
-        if (!cond)                                                                                                     \
+        if (ptr == nullptr)                                                                                            \
         {                                                                                                              \
-            INFO("Assert failed, " #op " : " __VA_ARGS__);                                                             \
+            fprintf(stderr, "[%s:%d]: Null pointer detected: %s", __FILE__, __LINE__, #ptr);                           \
             abort();                                                                                                   \
         }                                                                                                              \
     } while (0)
 
 void info(const char* file, int line, const char* fmt, ...);
+
+void error(const char* file, int line, const char* format, ...);
+
+// void info(const char* file, int line, const char* fmt, ...);
 
 std::string file_name(const std::string& path, bool include_suffix);
 
@@ -82,13 +76,12 @@ std::vector<cv::String> get_image_paths(const std::string& path, const std::stri
 
 std::vector<cv::Mat> get_images(const std::vector<cv::String>& image_paths);
 
-void save_image(const std::string&, const std::vector<cv::Mat>& images, const std::string& pattern = "jpg");
+std::vector<std::string> load_label_from_txt(const std::string& file_name);
 
-bool is_exists(std::string& name);
+std::vector<int> dims2vector(nvinfer1::Dims dims);
 
-static void cuda_check(cudaError_t err, const char* file, const int line);
+nvinfer1::Dims vector2dims(const std::vector<int>& data);
 
-static void kernel_check(const char* file, const int line);
+void print_dims(nvinfer1::Dims dims);
 
-std::vector<std::string> load_txt(const std::string& file_name);
 #endif

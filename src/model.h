@@ -1,5 +1,5 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include <utility>
 
@@ -9,6 +9,7 @@
 #include "map"
 #include "memory"
 #include "result.hpp"
+#include "unordered_map"
 #include "utils.h"
 #include "vector"
 
@@ -16,8 +17,6 @@ namespace trt
 {
 
 namespace nv = nvinfer1;
-
-//-----------------------------------------------------------
 
 template <typename T>
 void delete_pointer(T* ptr)
@@ -37,8 +36,11 @@ struct PointerDeleter
 template <typename T>
 using make_unique = std::unique_ptr<T, PointerDeleter>;
 
-// template <typename T>
-// using make_shared = std::shared_ptr<T, PointerDeleter>;
+template <typename T>
+std::shared_ptr<T> make_shared(T* ptr)
+{
+    return std::shared_ptr<T>(ptr, PointerDeleter());
+}
 
 //-----------------------------------------------------------
 
@@ -60,6 +62,9 @@ class NVLogger : public nv::ILogger
 
     void log(Severity severity, const char* msg) noexcept override
     {
+        if (severity > reportableSeverity)
+            return;
+
         switch (severity)
         {
         case nvinfer1::ILogger::Severity::kINTERNAL_ERROR:
@@ -80,40 +85,42 @@ class NVLogger : public nv::ILogger
         }
         std::cerr << msg << std::endl;
     }
+
+  private:
+    Severity reportableSeverity = Severity::kWARNING;
 };
 
 //-----------------------------------------------------------
 
 class Model
 {
-  private:
-    bool fp16_   = false;
-    bool int8_   = false;
-    int  device_ = 0;
+  public:
+    uchar device_          = kDefaultDevice;
+    bool  is_int8_         = false;
+    bool  is_fp16_         = false;
+    bool  is_fp32_         = true;
+    bool  is_dynamic_      = false;
+    uchar num_of_bindings_ = 0;
 
-    cudaStream_t stream_ = nullptr;
-
-    int  num_of_bindings_{0};
-    bool is_dynamic_{false};
-
-    std::string model_path_;
-
+    std::string          model_path_;
     std::vector<uint8_t> data_{};
 
+    cudaStream_t                           stream_  = nullptr;
     std::shared_ptr<nv::IRuntime>          runtime_ = nullptr;
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
 
-    std::vector<result::NCHW> inputs_{};
-    std::vector<result::NCHW> output_{};
+    std::unordered_map<uchar, result::NCHW> bindings_{};
+    std::unordered_map<uchar, result::NCHW> inputs_{};
+    std::unordered_map<uchar, result::NCHW> outputs_{};
 
   public:
     Model() = default;
     ~Model();
 
-    explicit Model(std::string engine_path) { model_path_ = std::move(engine_path); };
+    explicit Model(const std::string& model_path);
 
-    explicit Model(std::string model_path, int device, const std::string& mode);
+    explicit Model(const std::string& model_path, uchar device);
 
     void init();
 
@@ -123,68 +130,57 @@ class Model
 
     void create_stream();
 
-    void check_dynamic();
+    inline result::NCHW get_input(uchar index) { return inputs_[ index ]; };
 
-    DEPRECATED
-    inline std::shared_ptr<nv::IRuntime> get_runtime() { return runtime_; };
+    inline result::NCHW get_output(uchar index) { return outputs_[ index ]; };
 
-    DEPRECATED
-    inline std::shared_ptr<nv::ICudaEngine> get_engine() { return engine_; };
+    inline result::NCHW get_binding(uchar index) { return bindings_[ index ]; };
 
-    DEPRECATED
-    inline std::shared_ptr<nv::IExecutionContext> get_context() { return context_; };
+    inline std::unordered_map<uchar, result::NCHW> get_inputs() const { return inputs_; };
 
-    inline std::vector<result::NCHW> get_inputs() { return inputs_; };
+    inline std::unordered_map<uchar, result::NCHW> get_outputs() const { return outputs_; };
 
-    inline std::vector<result::NCHW> get_outputs() { return output_; };
+    inline std::unordered_map<uchar, result::NCHW> get_bindings() const { return bindings_; };
 
-    inline void set_model_path(std::string path) { model_path_ = std::move(path); };
+    inline uchar get_input_size() const { return inputs_.size(); };
 
-    inline cudaStream_t get_stream() { return stream_; };
+    inline uchar get_output_size() const { return outputs_.size(); };
+
+    inline void set_model_path(const std::string& path) { model_path_ = path; };
+
+    inline cudaStream_t get_stream() const { return stream_; };
 
     inline void set_stream(cudaStream_t stream) { stream_ = stream; };
 
     inline int get_device() const { return device_; };
 
-    void set_device(int device);
-
-    void reset();
-
-    static std::vector<int> dims_to_vector(nv::Dims dims);
-
-    static nv::Dims vector_to_dims(const std::vector<int>& data);
-
-    bool set_binding_dims(int idx, nv::Dims dims);
-
-    nv::Dims get_binding_dims(int idx);
-
-    nv::DataType get_binding_datatype(int idx);
-
-    bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
+    void set_device(uchar device);
 
     inline int get_num_of_binding() const { return num_of_bindings_; };
 
     inline bool is_dynamic() const { return is_dynamic_; };
 
-    inline void use_fp16()
-    {
-        fp16_ = true;
-        int8_ = false;
-    };
+    void reset();
 
-    inline void use_int8()
-    {
-        fp16_ = false;
-        int8_ = true;
-    };
+    nv::Dims get_binding_dims(uchar index);
 
-    static void print_dims(nv::Dims dims);
+    bool set_binding_dims(uchar index, nv::Dims dims);
 
-    void decode_input();
+    bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 
-    void decode_output();
+    void decode_model_inputs();
 
-    void decode_binding();
+    void decode_model_outputs();
+
+    void decode_model_bindings();
+
+    void set_input_dims(uchar index, nvinfer1::Dims dims);
+
+    char const* idx2name(uchar index);
+
+    void decode_model_status();
+
+    void show_model_info();
 };
 
 } // namespace trt
