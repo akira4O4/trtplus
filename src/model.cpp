@@ -122,10 +122,15 @@ void Model::decode_model_status()
         }
     }
 };
-
+// TODO:FIX:TRT_DEPRECATED FUNCTION
 bool Model::forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed)
 {
+
+    // #if NV_TENSORRT_MINOR < 5
     return context_->enqueueV2(bindings, stream, inputConsumed);
+    // #elif NV_TENSORRT_MINOR >= 5
+    //     return context_->enqueueV3(stream_);
+    // #endif
 }
 
 void Model::reset()
