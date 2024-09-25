@@ -7,6 +7,7 @@
 
 #include "algorithm"
 #include "iostream"
+#include "result.hpp"
 #include "utils.h"
 #include <cmath>
 #include <functional>

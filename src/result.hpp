@@ -30,32 +30,51 @@ struct XYWH
     size_t area() const { return w * h; };
 };
 
-struct Box
+struct BoundingBox
 {
-    size_t      idx = -1;
+    size_t      id = -1;
     XYWH        xywh;
-    XYXY        xyxy;
     float       score = 0.0;
-    std::string label;
+    std::string label_id;
 };
 
 struct Detection
 {
-    size_t           idx = -1;
-    std::string      name;
-    std::vector<Box> boxes;
-    bool             is_empty() const { return boxes.empty(); };
-    size_t           len() const { return boxes.size(); };
+    size_t                   id    = -1;
+    std::string              name  = "";
+    std::vector<BoundingBox> boxes = {};
+    bool                     is_empty() const { return boxes.empty(); };
+    size_t                   len() const { return boxes.size(); };
 };
+
+// yolov8 has an output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
+struct YOLOv8Output
+{
+
+    std::string name       = "";
+    int         id         = -1;
+    int         bs         = 0;
+    int         rows       = 0;
+    int         dimensions = 0;
+
+    size_t size(size_t byte = kINT8) const { return bs * rows * dimensions * byte; };
+    void   info() const
+    {
+        std::cout << "Id: " << id << "\tName: " << name << "\tShape: [ " << bs << " " << rows << " " << dimensions
+                  << " ]" << std::endl;
+    }
+};
+
 struct NCHW
 {
     std::string name;
 
-    int    idx = -1;
-    int    bs  = 0;
-    int    c   = 0;
-    int    h   = 0;
-    int    w   = 0;
+    int id = -1;
+    int bs = 0;
+    int c  = 0;
+    int h  = 0;
+    int w  = 0;
+
     size_t NxC(size_t byte = kINT8) const { return bs * c * byte; };
 
     size_t HxW(size_t byte = kINT8) const { return w * h * byte; };
@@ -66,7 +85,8 @@ struct NCHW
 
     void info() const
     {
-        std::cout << "Idx: " << idx << "\tName: " << name << "\tShape: [ " << bs << " " << c << " " << h << " " << w
+        //        INFO("ID:%d\tName:%s\tShape:\t[%d %d %d %d]", id, name, bs, c, h, w);
+        std::cout << "Id: " << id << "\tName: " << name << "\tShape: [ " << bs << " " << c << " " << h << " " << w
                   << " " << " ]" << std::endl;
     }
 };

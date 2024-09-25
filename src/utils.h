@@ -27,7 +27,7 @@ constexpr uint8_t kFLOAT32  = sizeof(float32_t);  // size=4
 
 #define DEPRECATED [[deprecated]]
 
-#define INFO(...) info(__FILE__, __LINE__, __VA_ARGS__)
+#define INFO(format, ...) info(__FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #define ERROR(format, ...) error(__FILE__, __LINE__, format, ##__VA_ARGS__)
 
@@ -64,7 +64,7 @@ constexpr uint8_t kFLOAT32  = sizeof(float32_t);  // size=4
         }                                                                                                              \
     } while (0)
 
-void info(const char* file, int line, const char* fmt, ...);
+void info(const char* file, int line, const char* format, ...);
 
 void error(const char* file, int line, const char* format, ...);
 
@@ -83,5 +83,7 @@ std::vector<int> dims2vector(nvinfer1::Dims dims);
 nvinfer1::Dims vector2dims(const std::vector<int>& data);
 
 void print_dims(nvinfer1::Dims dims);
+
+size_t dims_volume(nvinfer1::Dims dims);
 
 #endif

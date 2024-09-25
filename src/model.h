@@ -110,9 +110,9 @@ class Model
     std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
 
-    std::unordered_map<uchar, result::NCHW> bindings_{};
-    std::unordered_map<uchar, result::NCHW> inputs_{};
-    std::unordered_map<uchar, result::NCHW> outputs_{};
+    std::unordered_map<uchar, nvinfer1::Dims> bindings_{};
+    std::unordered_map<uchar, nvinfer1::Dims> inputs_{};
+    std::unordered_map<uchar, nvinfer1::Dims> outputs_{};
 
   public:
     Model() = default;
@@ -130,17 +130,17 @@ class Model
 
     void create_stream();
 
-    inline result::NCHW get_input(uchar index) { return inputs_[ index ]; };
+    inline nvinfer1::Dims get_input(uchar binding_index) { return inputs_[ binding_index ]; };
 
-    inline result::NCHW get_output(uchar index) { return outputs_[ index ]; };
+    inline nvinfer1::Dims get_output(uchar binding_index) { return outputs_[ binding_index ]; };
 
-    inline result::NCHW get_binding(uchar index) { return bindings_[ index ]; };
+    inline nvinfer1::Dims get_binding(uchar binding_index) { return bindings_[ binding_index ]; };
 
-    inline std::unordered_map<uchar, result::NCHW> get_inputs() const { return inputs_; };
+    inline std::unordered_map<uchar, nvinfer1::Dims> get_inputs() const { return inputs_; };
 
-    inline std::unordered_map<uchar, result::NCHW> get_outputs() const { return outputs_; };
+    inline std::unordered_map<uchar, nvinfer1::Dims> get_outputs() const { return outputs_; };
 
-    inline std::unordered_map<uchar, result::NCHW> get_bindings() const { return bindings_; };
+    inline std::unordered_map<uchar, nvinfer1::Dims> get_bindings() const { return bindings_; };
 
     inline uchar get_input_size() const { return inputs_.size(); };
 
@@ -162,25 +162,24 @@ class Model
 
     void reset();
 
-    nv::Dims get_binding_dims(uchar index);
+    nv::Dims get_binding_dims(uchar binding_index);
 
-    bool set_binding_dims(uchar index, nv::Dims dims);
+    bool set_binding_dims(uchar binding_index, nv::Dims dims);
 
     bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 
+    DEPRECATED
     void decode_model_inputs();
 
+    DEPRECATED
     void decode_model_outputs();
 
     void decode_model_bindings();
 
-    void set_input_dims(uchar index, nvinfer1::Dims dims);
-
-    char const* idx2name(uchar index);
+    char const* idx2name(uchar binding_index);
 
     void decode_model_status();
 
-    void show_model_info();
 };
 
 } // namespace trt

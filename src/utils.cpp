@@ -137,3 +137,15 @@ void print_dims(nvinfer1::Dims dims)
     }
     std::cout << " ]\n";
 }
+
+size_t dims_volume(nvinfer1::Dims dims)
+{
+    size_t volume = 1;
+    for (int i : dims.d)
+    {
+        if (i == 0)
+            continue;
+        volume *= i;
+    }
+    return volume;
+}

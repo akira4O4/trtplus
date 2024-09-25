@@ -21,17 +21,22 @@ int main(int argc, char const* argv[])
     model.init();
     auto stream = model.get_stream();
 
-    result::NCHW input_shape  = model.get_binding(0);
-    result::NCHW output_shape = model.get_binding(1);
+    nvinfer1::Dims input_dims  = model.get_binding_dims(0);
+    nvinfer1::Dims output_dims = model.get_binding_dims(1);
+
+    result::NCHW input_shape = {"input", 0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::NCHW output_shape = {"output", 1, output_dims.d[ 0 ], output_dims.d[ 1 ]};
     input_shape.info();
     output_shape.info();
 
     //----------------------------------------------------------------------
-    size_t input_size  = input_shape.NxCxHxW(kFLOAT32);
-    size_t output_size = output_shape.NxC(kFLOAT32);
+    size_t input_mem_size  = dims_volume(input_dims) * kFLOAT32;
+    size_t output_mem_size = dims_volume(output_dims) * kFLOAT32;
+    INFO("Input memory size: %d Byte", input_mem_size);
+    INFO("Output memory size: %d Byte", output_mem_size);
 
-    auto model_input_memory  = std::make_shared<trt::Memory>(input_shape.idx, input_size, true, stream);
-    auto model_output_memory = std::make_shared<trt::Memory>(output_shape.idx, output_size, true, stream);
+    auto input_memory  = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
+    auto output_memory = std::make_shared<trt::Memory>(1, output_mem_size, true, stream);
 
     //-----------------------------------------------------------------------
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
@@ -56,7 +61,7 @@ int main(int argc, char const* argv[])
         cv::Mat out;
 
         // pre-process
-        auto host_ptr = model_input_memory->get_cpu_ptr<float>();
+        auto host_ptr = input_memory->get_cpu_ptr<float>();
         for (int n = 0; n < input_shape.bs; ++n)
         {
             cv::Mat img = batch_images.at(n);
@@ -70,21 +75,21 @@ int main(int argc, char const* argv[])
         }
 
         // Infer--------------------------------------------------------------------------------------------------------
-        model_input_memory->to_gpu();
-        void* bindings[ 2 ]{model_input_memory->get_gpu_ptr(), model_output_memory->get_gpu_ptr()};
+        input_memory->to_gpu();
+        void* bindings[ 2 ]{input_memory->get_gpu_ptr(), output_memory->get_gpu_ptr()};
         model.forward(bindings, stream, nullptr);
-        model_output_memory->to_cpu();
+        output_memory->to_cpu();
 
         //--------------------------------------------------------------------------------------------------------------
 
-        auto output_host_ptr = model_output_memory->get_cpu_ptr<float>();
-        ASSERT_PTR(output_host_ptr);
-        auto nc = output_shape.c;
+        auto output_cpu_ptr = output_memory->get_cpu_ptr<float>();
+        ASSERT_PTR(output_cpu_ptr);
+        auto nc = labels.size();
 
         for (int k = 0; k < input_shape.bs; k++)
         {
             size_t offset  = k * nc;
-            auto   max_idx = cpu::argmax(output_host_ptr + offset, nc);
+            auto   max_idx = cpu::argmax(output_cpu_ptr + offset, nc);
             INFO("Prediction-> label: %s | score:%f", labels[ max_idx ].c_str(), output_host_ptr[ max_idx ]);
         }
         INFO("Done.\n");

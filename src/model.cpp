@@ -140,18 +140,18 @@ void Model::reset()
     runtime_.reset();
 }
 
-nvinfer1::Dims Model::get_binding_dims(uchar index)
+nvinfer1::Dims Model::get_binding_dims(uchar binding_index)
 {
 #if NV_TENSORRT_MINOR < 5
     return context_->getBindingDimensions(index);
 #elif NV_TENSORRT_MINOR >= 5
-    return context_->getTensorShape(idx2name(index));
+    return context_->getTensorShape(idx2name(binding_index));
 #endif
 }
 
-bool Model::set_binding_dims(uchar index, nvinfer1::Dims dims)
+bool Model::set_binding_dims(uchar binding_index, nvinfer1::Dims dims)
 {
-    auto item = inputs_.find(index);
+    auto item = inputs_.find(binding_index);
     if (item == inputs_.end())
     {
         return false;
@@ -186,20 +186,18 @@ void Model::decode_model_bindings()
     {
         if (engine_->bindingIsInput(i))
         {
-            auto         name = engine_->getBindingName(i);
-            auto         dims = context_->getBindingDimensions(i);
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_[ i ]      = nchw;
-            bindings_[ i ]    = nchw;
+            auto name      = engine_->getBindingName(i);
+            auto dims      = context_->getBindingDimensions(i);
+            inputs_[ i ]   = dims;
+            bindings_[ i ] = dims;
         }
         else
         {
 
-            auto         name = engine_->getBindingName(i);
-            auto         dims = context_->getBindingDimensions(i);
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            outputs_[ i ]     = nchw;
-            bindings_[ i ]    = nchw;
+            auto name      = engine_->getBindingName(i);
+            auto dims      = context_->getBindingDimensions(i);
+            outputs_[ i ]  = dims;
+            bindings_[ i ] = dims;
         }
     }
 }
@@ -216,15 +214,13 @@ void Model::decode_model_bindings()
         auto dims = context_->getTensorShape(name);
         if (mode == nvinfer1::TensorIOMode::kINPUT)
         {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_[ i ]      = nchw;
-            bindings_[ i ]    = nchw;
+            inputs_[ i ]   = dims;
+            bindings_[ i ] = dims;
         }
         else if (mode == nvinfer1::TensorIOMode::kOUTPUT)
         {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            outputs_[ i ]     = nchw;
-            bindings_[ i ]    = nchw;
+            outputs_[ i ]  = dims;
+            bindings_[ i ] = dims;
         }
     }
 }
@@ -258,8 +254,8 @@ void Model::decode_model_inputs()
         auto input = nvinfer1::TensorIOMode::kINPUT;
         if (mode == input)
         {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_[ i ]      = nchw;
+            //            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            inputs_[ i ] = dims;
         }
     }
 }
@@ -292,57 +288,20 @@ void Model::decode_model_outputs()
         auto dims = context_->getTensorShape(name);
         if (mode == nvinfer1::TensorIOMode::kOUTPUT)
         {
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            outputs_[ i ]     = nchw;
+            //            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
+            outputs_[ i ] = dims;
         }
     }
 }
 #endif
 
-char const* Model::idx2name(uchar index)
+char const* Model::idx2name(uchar binding_index)
 {
 #if NV_TENSORRT_MINOR < 5
     return engine_->getBindingName(index);
 #elif NV_TENSORRT_MINOR >= 5
-    return engine_->getIOTensorName(index);
+    return engine_->getIOTensorName(binding_index);
 #endif
-}
-
-void Model::set_input_dims(uchar index, nvinfer1::Dims dims)
-{
-    if (is_dynamic_)
-    {
-        ASSERT_TRUE(set_binding_dims(index, dims));
-        decode_model_inputs();
-    }
-    else
-    {
-        INFO("Model is static. can not set the input dims.");
-    }
-}
-
-void Model::show_model_info()
-{
-    INFO("Model path: %s", model_path_.c_str());
-    INFO("Device: %d", device_);
-
-    if (is_dynamic_)
-        INFO("Model is dynamic");
-    else
-        INFO("Model is static");
-
-    if (is_int8_)
-        INFO("Model Int8: True");
-    else if (is_fp16_)
-        INFO("Model FP16: True");
-    else if (is_fp32_)
-        INFO("Model FP32: True");
-
-    INFO("Num of bindings: %d", num_of_bindings_);
-    for (const auto& item : inputs_)
-        item.second.info();
-    for (const auto& item : outputs_)
-        item.second.info();
 }
 
 } // namespace trt
