@@ -28,7 +28,7 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
     result::NCHW input_shape = {"input", 0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YOLOv8Output output_shape = {"output", 1, output_dims.d[ 0 ], output_dims.d[ 1 ], output_dims.d[ 2 ]};
+    result::YOLOv8Output output_shape = {"output", 1, output_dims.d[ 0 ], output_dims.d[ 2 ], output_dims.d[ 1 ]};
     input_shape.info();
     output_shape.info();
 
@@ -90,6 +90,10 @@ int main(int argc, char const* argv[])
         // yolov8 output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
         for (int k = 0; k < input_shape.bs; k++)
         {
+            std::vector<int>      label_ids;
+            std::vector<float>    confidences;
+            std::vector<cv::Rect> boxes;
+
             cv::Mat curr_image = batch_images[ k ];
             auto    x_factor   = curr_image.cols / input_shape.w;
             auto    y_factor   = curr_image.rows / input_shape.h;
