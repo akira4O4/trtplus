@@ -3,10 +3,6 @@
 //
 
 #include "preprocess.h"
-
-#include "memory.h"
-#include "utils.h"
-#include <opencv2/opencv.hpp>
 namespace gpu
 {
 }

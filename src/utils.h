@@ -3,18 +3,11 @@
 
 #include "NvInfer.h"
 #include "iostream"
+#include "result.hpp"
+#include "utils.h"
 #include <experimental/filesystem>
 #include <opencv2/core/core.hpp>
 #include <utility>
-
-constexpr uchar   kDefaultDevice  = 0;
-constexpr uchar   kDefaultBatch   = 1;
-constexpr uchar   kDefaultChannel = 3;
-constexpr uchar   kDefaultHeight  = 224;
-constexpr uchar   kDefaultWidth   = 224;
-constexpr float   kDefaultIoU     = 0.5;
-constexpr float   kDefaultConf    = 0.5;
-const std::string kDefaultMode    = "fp32";
 
 typedef unsigned short bfloat16_t;
 typedef unsigned short float16_t;
@@ -57,7 +50,7 @@ constexpr uint8_t kFLOAT32  = sizeof(float32_t);  // size=4
 #define ASSERT_PTR(ptr)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (ptr == nullptr)                                                                                            \
+        if ((ptr) == nullptr)                                                                                          \
         {                                                                                                              \
             fprintf(stderr, "[%s:%d]: Null pointer detected: %s", __FILE__, __LINE__, #ptr);                           \
             abort();                                                                                                   \
@@ -67,10 +60,6 @@ constexpr uint8_t kFLOAT32  = sizeof(float32_t);  // size=4
 void info(const char* file, int line, const char* format, ...);
 
 void error(const char* file, int line, const char* format, ...);
-
-// void info(const char* file, int line, const char* fmt, ...);
-
-std::string file_name(const std::string& path, bool include_suffix);
 
 std::vector<cv::String> get_image_paths(const std::string& path, const std::string& pattern = "jpg");
 
@@ -86,4 +75,10 @@ void print_dims(nvinfer1::Dims dims);
 
 size_t dims_volume(nvinfer1::Dims dims);
 
+std::vector<cv::Scalar> generate_color_list(int numColors);
+
+std::string get_basename(const std::string& filePath);
+
+cv::Mat draw_box(const cv::Mat& image, const std::vector<result::Detection>& detections,
+                 std::vector<cv::Scalar> colors);
 #endif

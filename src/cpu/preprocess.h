@@ -5,7 +5,6 @@
 #ifndef MAIN_CPU_PREPROCESS_H
 #define MAIN_CPU_PREPROCESS_H
 
-#include "result.hpp"
 #include <opencv2/opencv.hpp>
 namespace cpu
 {

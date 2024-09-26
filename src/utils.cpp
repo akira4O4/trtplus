@@ -1,45 +1,12 @@
 #include "utils.h"
-
-#include <cstdarg>
-#include <opencv2/core/core.hpp>
-
-#include "iostream"
 #include "opencv2/opencv.hpp"
-
-std::string file_name(const std::string& path, bool include_suffix)
-{
-    if (path.empty())
-    {
-        return "";
-    }
-
-    int p = path.rfind('/');
-    int e = path.rfind('\\');
-    p     = std::max(p, e);
-    p += 1;
-
-    // include suffix
-    if (include_suffix)
-    {
-        return path.substr(p);
-    }
-
-    int u = path.rfind('.');
-    if (u == -1)
-    {
-        return path.substr(p);
-    }
-
-    if (u <= p)
-    {
-        u = path.size();
-    }
-    return path.substr(p, u - p);
-}
+#include "vector"
+#include <cstdarg>
 
 void info(const char* file, int line, const char* format, ...)
 {
-    fprintf(stdout, "INFO:[%s:%d]: ", file, line);
+    std::string basename = get_basename(file);
+    fprintf(stdout, "INFO:[%s:%d]: ", basename.c_str(), line);
     va_list args;
     va_start(args, format);
     vfprintf(stdout, format, args);
@@ -50,7 +17,8 @@ void info(const char* file, int line, const char* format, ...)
 void error(const char* file, int line, const char* format, ...)
 {
     // 打印文件名和行号
-    fprintf(stderr, "ERROR:[%s:%d]: ", file, line);
+    std::string basename = get_basename(file);
+    fprintf(stderr, "ERROR:[%s:%d]: ", basename.c_str(), line);
 
     // 可变参数处理
     va_list args;
@@ -65,16 +33,6 @@ void error(const char* file, int line, const char* format, ...)
     // 换行
     fprintf(stderr, "\n");
 }
-// void info(const char *file, int line, const char *fmt, ...)
-//{
-//     va_list vl;
-//     va_start(vl, fmt);
-//     char        buffer[ 2048 ];
-//     std::string filename = file_name(file, true);
-//     int         n        = snprintf(buffer, sizeof(buffer), "[%s:%d]: ", filename.c_str(), line);
-//     vsnprintf(buffer + n, sizeof(buffer) - n, fmt, vl);
-//     fprintf(stdout, "%s\n", buffer);
-// }
 
 std::vector<cv::String> get_image_paths(const std::string& path, const std::string& pattern)
 {
@@ -148,4 +106,59 @@ size_t dims_volume(nvinfer1::Dims dims)
         volume *= i;
     }
     return volume;
+}
+
+std::vector<cv::Scalar> generate_color_list(int numColors)
+{
+    std::vector<cv::Scalar> color_list;
+
+    for (int i = 0; i < numColors; ++i)
+    {
+        // 生成不同的颜色，HSV 色相值从 0 到 180，饱和度和明亮度固定为 255
+        int        hue   = static_cast<int>((i * 180.0) / numColors) % 180; // 色相
+        cv::Scalar color = cv::Scalar(0, 0, 0);                             // 初始化为黑色
+        cv::Mat    hsv(1, 1, CV_8UC3, cv::Scalar(hue, 255, 255));           // HSV颜色
+        cv::Mat    bgr;
+
+        // 将 HSV 转换为 BGR
+        cv::cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
+        color = cv::Scalar(bgr.at<cv::Vec3b>(0, 0)[ 0 ], bgr.at<cv::Vec3b>(0, 0)[ 1 ], bgr.at<cv::Vec3b>(0, 0)[ 2 ]);
+
+        color_list.push_back(color);
+    }
+
+    return color_list;
+}
+
+std::string get_basename(const std::string& filePath)
+{
+    size_t pos = filePath.find_last_of("/\\");
+    return filePath.substr(pos + 1);
+}
+
+cv::Mat draw_box(const cv::Mat& image, const std::vector<result::Detection>& detections, std::vector<cv::Scalar> colors)
+{
+    cv::Mat imageCopy = image.clone();
+
+    for (int n = 0; n < detections.size(); ++n)
+    {
+        result::Detection det = detections[ n ];
+
+        auto x     = det.box.x;
+        auto y     = det.box.y;
+        auto color = colors[ det.label_id ];
+
+        cv::rectangle(imageCopy, det.box, color, 1);
+
+        float conf = floor(100 * det.conf) / 100;
+        std::cout << std::fixed << std::setprecision(2);
+        std::string label = det.label + " " + std::to_string(conf).substr(0, std::to_string(conf).size() - 4);
+
+//        cv::rectangle(imageCopy, cv::Point(x, y - 25), cv::Point(x + label.length() * 15, y), color, cv::FILLED);
+
+        cv::putText(imageCopy, label, cv::Point(x, y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
+    }
+
+    // 返回绘制后的图像副本
+    return imageCopy;
 }

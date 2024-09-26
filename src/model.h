@@ -1,17 +1,15 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <utility>
-
 #include "NvInfer.h"
 #include "fstream"
 #include "iostream"
 #include "map"
 #include "memory"
-#include "result.hpp"
 #include "unordered_map"
 #include "utils.h"
 #include "vector"
+#include <utility>
 
 namespace trt
 {
@@ -95,7 +93,7 @@ class NVLogger : public nv::ILogger
 class Model
 {
   public:
-    uchar device_          = kDefaultDevice;
+    uchar device_          = 0;
     bool  is_int8_         = false;
     bool  is_fp16_         = false;
     bool  is_fp32_         = true;
@@ -179,7 +177,6 @@ class Model
     char const* idx2name(uchar binding_index);
 
     void decode_model_status();
-
 };
 
 } // namespace trt
