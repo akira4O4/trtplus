@@ -1,6 +1,3 @@
-//
-// Created by seeking on 9/23/24.
-//
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
@@ -14,10 +11,13 @@
 
 int main(int argc, char const* argv[])
 {
-    auto device      = kDefaultDevice;
-    auto model_path  = "/home/seeking/llf/code/trtplus/assets/D2/models/1x3x256x256.fp32.static.engine";
-    auto images_dir  = "/home/seeking/llf/code/trtplus/assets/D2/images";
-    auto labels_file = "/home/seeking/llf/code/trtplus/assets/D2/label.txt";
+    uchar       device      = 0;
+    float       conf_thr    = 0.5;
+    float       iou_thr     = 0.6;
+    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/D2/models/1x3x256x256.fp32.static.engine";
+    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/D2/images";
+    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/D2/output";
+    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/D2/label.txt";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
@@ -27,8 +27,13 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims input_dims  = model.get_binding_dims(0);
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
-    result::NCHW input_shape = {"input", 0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YOLOv8Output output_shape = {"output", 1, output_dims.d[ 0 ], output_dims.d[ 2 ], output_dims.d[ 1 ]};
+    // yolov8 output shape=[bs,dimensions,rows]
+    result::NCHW         input_shape  = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::YOLOv8Output output_shape = {1};
+    output_shape.bs                   = output_dims.d[ 0 ];
+    output_shape.dimensions           = output_dims.d[ 1 ];
+    output_shape.rows                 = output_dims.d[ 2 ];
+
     input_shape.info();
     output_shape.info();
 
@@ -49,6 +54,10 @@ int main(int argc, char const* argv[])
     std::vector<cv::String> batch_images_path;
 
     std::vector<std::string> labels = load_label_from_txt(labels_file);
+
+    auto nc         = labels.size();
+    auto color_list = generate_color_list(nc);
+
     for (int i = 0; i < images.size(); ++i)
     {
 
@@ -59,10 +68,9 @@ int main(int argc, char const* argv[])
         if (batch_images.size() != input_shape.bs)
             continue;
 
+        // Preprocess --------------------------------------------------------------------------------------------------
         cv::Mat out;
-
-        // pre-process
-        auto host_ptr = input_memory->get_cpu_ptr<float>();
+        auto    host_ptr = input_memory->get_cpu_ptr<float>();
         for (int n = 0; n < input_shape.bs; ++n)
         {
             cv::Mat img = batch_images.at(n);
@@ -81,25 +89,78 @@ int main(int argc, char const* argv[])
         model.forward(bindings, stream, nullptr);
         output_memory->to_cpu();
 
-        //--------------------------------------------------------------------------------------------------------------
+        // Decode ------------------------------------------------------------------------------------------------------
 
         auto output_cpu_ptr = output_memory->get_cpu_ptr<float>();
         ASSERT_PTR(output_cpu_ptr);
-        auto nc = labels.size();
 
-        // yolov8 output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
-        for (int k = 0; k < input_shape.bs; k++)
+        //  yolov8 output of shape (bs, dimensions, rows) (dimensions=[xywh+nc])
+        for (int n = 0; n < input_shape.bs; n++)
         {
+
+            size_t offset     = n * output_shape.rows * output_shape.dimensions;
+            auto   batch_data = output_cpu_ptr + offset;
+
+            // [dims, rows] -> [rows, dims]
+            cv::Mat temp_data(output_shape.dimensions, output_shape.rows, CV_32FC1, batch_data);
+            cv::Mat transposed_data;
+            cv::transpose(temp_data, transposed_data);
+
+            auto data = (float*) transposed_data.data;
+
             std::vector<int>      label_ids;
             std::vector<float>    confidences;
             std::vector<cv::Rect> boxes;
 
-            cv::Mat curr_image = batch_images[ k ];
+            // Scale factor
+            cv::Mat curr_image = batch_images[ n ];
             auto    x_factor   = curr_image.cols / input_shape.w;
             auto    y_factor   = curr_image.rows / input_shape.h;
 
-            size_t offset       = k * output_shape.rows * output_shape.dimensions;
-            auto   curr_cpu_ptr = output_cpu_ptr + offset;
+            for (int row = 0; row < output_shape.rows; ++row)
+            {
+                float* classes_scores = data + 4;
+                size_t max_score_idx  = cpu::argmax(classes_scores, nc);
+                float  max_score      = classes_scores[ max_score_idx ];
+
+                if (max_score >= conf_thr)
+                {
+                    confidences.emplace_back(max_score);
+                    label_ids.push_back(max_score_idx);
+
+                    float cx = data[ 0 ];
+                    float cy = data[ 1 ];
+                    float w  = data[ 2 ];
+                    float h  = data[ 3 ];
+
+                    int real_x = int((cx - 0.5 * w) * x_factor);
+                    int real_y = int((cy - 0.5 * h) * y_factor);
+                    int real_w = int(w * x_factor);
+                    int real_h = int(h * y_factor);
+
+                    boxes.emplace_back(cv::Rect(real_x, real_y, real_w, real_h));
+                }
+                data += output_shape.dimensions;
+            }
+
+            std::vector<int> nms_result;
+            cv::dnn::NMSBoxes(boxes, confidences, conf_thr, iou_thr, nms_result);
+
+            std::vector<result::Detection> detections{};
+            for (unsigned long i = 0; i < nms_result.size(); ++i)
+            {
+                int               idx = nms_result[ i ];
+                result::Detection result;
+                result.label_id = label_ids[ idx ];
+                result.label    = labels[ result.label_id ];
+                result.conf     = confidences[ idx ];
+                result.box      = boxes[ idx ];
+                detections.push_back(result);
+            }
+
+            cv::Mat     draw_img = draw_box(curr_image, detections,color_list);
+            std::string basename = get_basename(batch_images_path[ n ]);
+            cv::imwrite(output_dir + "/" + basename, draw_img);
         }
         INFO("Done.\n");
 
