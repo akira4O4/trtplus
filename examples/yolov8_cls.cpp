@@ -11,27 +11,41 @@
 
 int main(int argc, char const* argv[])
 {
-    auto device      = kDefaultDevice;
+    auto device      = 0;
     auto model_path  = "";
     auto images_dir  = "";
     auto labels_file = "";
+
+    std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
     model.init();
     auto stream = model.get_stream();
+    if (model.is_dynamic())
+    {
+        if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
+        {
+            model.decode_model_bindings();
+            INFO("Setting Successful .");
+        }
+        else
+        {
+            ERROR("Setup Failure.");
+        }
+    }
 
     nvinfer1::Dims input_dims  = model.get_binding_dims(0);
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
-    result::NCHW input_shape = {"input", 0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::NCHW output_shape = {"output", 1, output_dims.d[ 0 ], output_dims.d[ 1 ]};
+    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::ClassificationOutput output_shape = {1, output_dims.d[ 0 ], output_dims.d[ 1 ]};
     input_shape.info();
     output_shape.info();
 
     //----------------------------------------------------------------------
-    size_t input_mem_size  = dims_volume(input_dims) * kFLOAT32;
-    size_t output_mem_size = dims_volume(output_dims) * kFLOAT32;
+    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
+    size_t output_mem_size = output_shape.NxNC() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
     INFO("Output memory size: %d Byte", output_mem_size);
 
@@ -90,7 +104,7 @@ int main(int argc, char const* argv[])
         {
             size_t offset  = k * nc;
             auto   max_idx = cpu::argmax(output_cpu_ptr + offset, nc);
-            INFO("Prediction-> label: %s | score:%f", labels[ max_idx ].c_str(), output_host_ptr[ max_idx ]);
+            INFO("Prediction-> label: %s | score:%f", labels[ max_idx ].c_str(), output_cpu_ptr[ max_idx ]);
         }
         INFO("Done.\n");
 

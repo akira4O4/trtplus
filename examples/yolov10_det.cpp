@@ -32,7 +32,11 @@ int main(int argc, char const* argv[])
         if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
         {
             model.decode_model_bindings();
-            INFO("Setting success.");
+            INFO("Setting Successful .");
+        }
+        else
+        {
+            ERROR("Setup Failure.");
         }
     }
 
@@ -40,14 +44,14 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
     // yolov10 output shape=[bs,rows,dimensions]
-    result::NCHW       input_shape  = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YOLOOutput output_shape = {1, output_dims.d[ 0 ], output_dims.d[ 1 ], output_dims.d[ 2 ]};
+    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::YoloDetectionOutput output_shape = {1, output_dims.d[ 0 ], output_dims.d[ 1 ], output_dims.d[ 2 ]};
 
     input_shape.info();
     output_shape.info();
 
-    size_t input_mem_size  = dims_volume(input_dims) * kFLOAT32;
-    size_t output_mem_size = dims_volume(output_dims) * kFLOAT32;
+    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
+    size_t output_mem_size = output_shape.volume() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
     INFO("Output memory size: %d Byte", output_mem_size);
 

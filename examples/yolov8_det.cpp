@@ -30,7 +30,11 @@ int main(int argc, char const* argv[])
         if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
         {
             model.decode_model_bindings();
-            INFO("Setting success.");
+            INFO("Setting Successful .");
+        }
+        else
+        {
+            ERROR("Setup Failure.");
         }
     }
 
@@ -38,17 +42,17 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
     // yolov8 output shape=[bs,dimensions,rows]
-    result::NCHW       input_shape  = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YOLOOutput output_shape = {1};
-    output_shape.bs                 = output_dims.d[ 0 ];
-    output_shape.dimensions         = output_dims.d[ 1 ];
-    output_shape.rows               = output_dims.d[ 2 ];
+    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::YoloDetectionOutput output_shape = {1};
+    output_shape.bs                          = output_dims.d[ 0 ];
+    output_shape.dimensions                  = output_dims.d[ 1 ];
+    output_shape.rows                        = output_dims.d[ 2 ];
 
     input_shape.info();
     output_shape.info();
 
-    size_t input_mem_size  = dims_volume(input_dims) * kFLOAT32;
-    size_t output_mem_size = dims_volume(output_dims) * kFLOAT32;
+    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
+    size_t output_mem_size = output_shape.volume() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
     INFO("Output memory size: %d Byte", output_mem_size);
 
@@ -163,7 +167,7 @@ int main(int argc, char const* argv[])
 
                 result::Detection det;
                 det.label_id = label_ids[ idx ];
-                det.label    = labels[ result.label_id ];
+                det.label    = labels[ det.label_id ];
                 det.conf     = confidences[ idx ];
                 det.box      = boxes[ idx ];
                 detections.push_back(det);
