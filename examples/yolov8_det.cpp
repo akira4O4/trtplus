@@ -11,18 +11,28 @@
 
 int main(int argc, char const* argv[])
 {
-    uchar       device      = 0;
-    float       conf_thr    = 0.5;
-    float       iou_thr     = 0.6;
-    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/D2/models/1x3x256x256.fp32.static.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/D2/images";
-    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/D2/output";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/D2/label.txt";
+    uchar            device              = 0;
+    float            conf_thr            = 0.5;
+    float            iou_thr             = 0.6;
+    std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
+
+    std::string model_path  = "";
+    std::string images_dir  = "";
+    std::string output_dir  = "";
+    std::string labels_file = "";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
     model.init();
     auto stream = model.get_stream();
+    if (model.is_dynamic())
+    {
+        if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
+        {
+            model.decode_model_bindings();
+            INFO("Setting success.");
+        }
+    }
 
     nvinfer1::Dims input_dims  = model.get_binding_dims(0);
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
@@ -106,7 +116,7 @@ int main(int argc, char const* argv[])
             cv::Mat transposed_data;
             cv::transpose(temp_data, transposed_data);
 
-            auto data = (float*) transposed_data.data;
+            auto data = transposed_data.ptr<float>();
 
             std::vector<int>      label_ids;
             std::vector<float>    confidences;
@@ -158,9 +168,12 @@ int main(int argc, char const* argv[])
                 detections.push_back(result);
             }
 
-            cv::Mat     draw_img = draw_box(curr_image, detections,color_list);
+            cv::Mat     draw_img = draw_box(curr_image, detections, color_list);
             std::string basename = get_basename(batch_images_path[ n ]);
-            cv::imwrite(output_dir + "/" + basename, draw_img);
+
+            std::string draw_image_save_path = output_dir + "/" + basename;
+            cv::imwrite(draw_image_save_path, draw_img);
+            INFO("Save: %s", draw_image_save_path.c_str());
         }
         INFO("Done.\n");
 

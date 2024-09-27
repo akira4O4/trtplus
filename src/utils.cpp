@@ -79,7 +79,8 @@ std::vector<int> dims2vector(const nvinfer1::Dims dims)
 
 nvinfer1::Dims vector2dims(const std::vector<int>& data)
 {
-    nvinfer1::Dims d;
+    ASSERT_TRUE(1 <= data.size() <= 8);
+    nvinfer1::Dims d = {};
     std::memcpy(d.d, data.data(), sizeof(int) * data.size());
     d.nbDims = data.size();
     return d;
@@ -101,7 +102,7 @@ size_t dims_volume(nvinfer1::Dims dims)
     size_t volume = 1;
     for (int i : dims.d)
     {
-        if (i == 0)
+        if (i <= 0)
             continue;
         volume *= i;
     }
@@ -154,7 +155,8 @@ cv::Mat draw_box(const cv::Mat& image, const std::vector<result::Detection>& det
         std::cout << std::fixed << std::setprecision(2);
         std::string label = det.label + " " + std::to_string(conf).substr(0, std::to_string(conf).size() - 4);
 
-//        cv::rectangle(imageCopy, cv::Point(x, y - 25), cv::Point(x + label.length() * 15, y), color, cv::FILLED);
+        //        cv::rectangle(imageCopy, cv::Point(x, y - 25), cv::Point(x + label.length() * 15, y), color,
+        //        cv::FILLED);
 
         cv::putText(imageCopy, label, cv::Point(x, y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
     }

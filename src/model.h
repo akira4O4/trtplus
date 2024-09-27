@@ -92,7 +92,7 @@ class NVLogger : public nv::ILogger
 
 class Model
 {
-  public:
+  private:
     uchar device_          = 0;
     bool  is_int8_         = false;
     bool  is_fp16_         = false;
