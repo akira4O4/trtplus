@@ -1,9 +1,9 @@
 #ifndef MAIN_RESULT_HPP
 #define MAIN_RESULT_HPP
 
-//#include "iostream"
-//#include <chrono>
-//#include <ctime>
+// #include "iostream"
+// #include <chrono>
+// #include <ctime>
 #include <opencv2/core/core.hpp>
 
 namespace result
@@ -18,8 +18,8 @@ struct Detection
     cv::Rect    box      = {};
 };
 
-// Model output
-struct YOLOv8Output
+// Support v5 v8 v10
+struct YOLOOutput
 {
     int id         = -1;
     int bs         = 0;
@@ -31,7 +31,6 @@ struct YOLOv8Output
         std::cout << "Id: " << id << "\tShape: [ " << bs << " " << rows << " " << dimensions << " ]" << std::endl;
     }
 };
-
 struct NCHW
 {
     int id = -1;

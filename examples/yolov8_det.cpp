@@ -38,11 +38,11 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
     // yolov8 output shape=[bs,dimensions,rows]
-    result::NCHW         input_shape  = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YOLOv8Output output_shape = {1};
-    output_shape.bs                   = output_dims.d[ 0 ];
-    output_shape.dimensions           = output_dims.d[ 1 ];
-    output_shape.rows                 = output_dims.d[ 2 ];
+    result::NCHW       input_shape  = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    result::YOLOOutput output_shape = {1};
+    output_shape.bs                 = output_dims.d[ 0 ];
+    output_shape.dimensions         = output_dims.d[ 1 ];
+    output_shape.rows               = output_dims.d[ 2 ];
 
     input_shape.info();
     output_shape.info();
