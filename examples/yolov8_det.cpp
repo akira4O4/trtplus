@@ -159,13 +159,14 @@ int main(int argc, char const* argv[])
             std::vector<result::Detection> detections{};
             for (unsigned long i = 0; i < nms_result.size(); ++i)
             {
-                int               idx = nms_result[ i ];
-                result::Detection result;
-                result.label_id = label_ids[ idx ];
-                result.label    = labels[ result.label_id ];
-                result.conf     = confidences[ idx ];
-                result.box      = boxes[ idx ];
-                detections.push_back(result);
+                int idx = nms_result[ i ];
+
+                result::Detection det;
+                det.label_id = label_ids[ idx ];
+                det.label    = labels[ result.label_id ];
+                det.conf     = confidences[ idx ];
+                det.box      = boxes[ idx ];
+                detections.push_back(det);
             }
 
             cv::Mat     draw_img = draw_box(curr_image, detections, color_list);
