@@ -6,7 +6,7 @@
 #include "src/cpu/preprocess.h"
 #include "src/memory.h"
 #include "src/model.h"
-#include "src/result.hpp"
+#include "src/io.h"
 #include "src/utils.h"
 #include "unistd.h"
 #include "vector"

@@ -1,5 +1,5 @@
-#ifndef MEMORY_MANAGER_H
-#define MEMORY_MANAGER_H
+#ifndef MEMORY_H
+#define MEMORY_H
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -114,4 +114,4 @@ class Memory
 };
 
 } // namespace trt
-#endif // MEMORY_MANAGER_H
+#endif // MEMORY_H

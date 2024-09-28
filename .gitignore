@@ -5,12 +5,8 @@ build/
 *.pth
 *.onnx
 *.engine
-*.png
-*.txt
-*.jpg
-*.jpeg
 /cmake-build-debug/
 /temp/
 3rdparty/
 src/version.h
-/assets/
+/main
