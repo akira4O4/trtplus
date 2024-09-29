@@ -14,3 +14,4 @@ build/
 3rdparty/
 src/version.h
 /assets/
+/examples/v10-postprocess.py
