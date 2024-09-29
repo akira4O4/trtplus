@@ -83,9 +83,11 @@ int main(int argc, char const* argv[])
             out = cpu::resize(img, input_wh);
             out = cpu::bgr2rgb(out);
             out = cpu::normalize(out);
+            out = cpu::hwc2chw(out);
 
             size_t offset = n * input_shape.CxHxW();
-            cpu::hwc2chw(out, host_ptr + offset);
+            std::memcpy(host_ptr + offset, out.ptr<float>(0), input_shape.CxHxW() * sizeof(float));
+
         }
 
         // Infer--------------------------------------------------------------------------------------------------------

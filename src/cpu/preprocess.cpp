@@ -12,10 +12,10 @@ bool is_gray(const cv::Mat& image)
 
 void hwc2chw(cv::Mat& img, float* out)
 {
-    assert(img.channels() == 3);
+    CV_Assert(img.type() == CV_32FC3);
     int ic = img.channels();
 
-    // vec(mat(r),mat(g),mat(b))
+    // vec(R,G,B)
     std::vector<cv::Mat> channels(ic);
     cv::split(img, channels);
 
@@ -28,31 +28,24 @@ void hwc2chw(cv::Mat& img, float* out)
     }
 }
 
-void chw2hwc(cv::Mat& img, float* out)
+cv::Mat hwc2chw(const cv::Mat& input)
 {
-    // 检查图像是否为三通道彩色图像
-    if (img.channels() != 3)
-    {
-        std::cerr << "图像必须是三通道 (BGR/RGB) 彩色图像！" << std::endl;
-        return;
-    }
+    CV_Assert(input.type() == CV_32FC3);
+    int height   = input.rows;
+    int width    = input.cols;
+    int channels = input.channels();
 
-    int height   = img.rows;
-    int width    = img.cols;
-    int channels = img.channels();
+    cv::Mat output(3, new int[ 3 ]{channels, height, width}, CV_32F);
 
-    // 逐通道拷贝数据
+    std::vector<cv::Mat> input_channels(channels);
+    cv::split(input, input_channels);
+
     for (int c = 0; c < channels; ++c)
     {
-        const uchar* src = img.ptr<uchar>(0) + c;
-        for (int h = 0; h < height; ++h)
-        {
-            for (int w = 0; w < width; ++w)
-            {
-                out[ h * width * channels + w * channels + c ] = static_cast<float>(src[ h * img.step + w * channels ]);
-            }
-        }
+        std::memcpy(output.ptr<float>(c), input_channels[ c ].ptr<float>(0), height * width * sizeof(float));
     }
+
+    return output;
 }
 
 cv::Mat bgr2rgb(const cv::Mat& input)
@@ -87,31 +80,12 @@ cv::Mat gray2bgr(const cv::Mat& input)
 
     return output;
 }
-cv::Mat image2rgb(const cv::Mat& input)
-{
-    cv::Mat output;
-    if (input.channels() == 1)
-        cv::cvtColor(input, output, cv::COLOR_GRAY2RGB);
-    else if (input.channels() == 3)
-        cv::cvtColor(input, output, cv::COLOR_BGR2RGB);
-    return output;
-}
 
-cv::Mat image2bgr(const cv::Mat& input)
+cv::Mat standardize(const cv::Mat& input, const cv::Scalar& mean, const cv::Scalar& std)
 {
     cv::Mat output;
-    if (input.channels() == 1)
-        cv::cvtColor(input, output, cv::COLOR_GRAY2BGR);
-    else if (input.channels() == 3)
-        cv::cvtColor(input, output, cv::COLOR_RGB2BGR);
-    return output;
-}
-
-cv::Mat standardize(const cv::Mat& input)
-{
-    cv::Mat output;
-    cv::subtract(input, cv::Scalar(0.485, 0.456, 0.406), output);
-    cv::divide(output, cv::Scalar(0.229, 0.224, 0.225), output);
+    cv::subtract(input, mean, output);
+    cv::divide(output, std, output);
     return output;
 }
 

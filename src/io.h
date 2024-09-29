@@ -1,7 +1,7 @@
 #ifndef IO_H
 #define IO_H
 
- #include "iostream"
+#include "iostream"
 // #include <chrono>
 // #include <ctime>
 #include <opencv2/core/core.hpp>
@@ -58,6 +58,22 @@ struct Classification
     void print() const { std::cout << "Id: " << id << "\tShape: [ bs:" << bs << " nc: " << nc << " ]" << std::endl; }
 };
 
+struct Segmentation
+{
+    int id = -1;
+    int bs = 0;
+    int c  = 0; // channels
+    int h  = 0;
+    int w  = 0;
+
+    size_t volume() const { return bs * c * w * h; };
+
+    void print() const
+    {
+        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+                  << std::endl;
+    }
+};
 struct YoloDetection
 {
     int id         = -1;
