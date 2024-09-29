@@ -160,12 +160,12 @@ int main(int argc, char const* argv[])
             std::vector<int> nms_result;
             cv::dnn::NMSBoxes(boxes, confidences, conf_thr, iou_thr, nms_result);
 
-            std::vector<result::Detection> detections{};
+            std::vector<output::Detection> detections{};
             for (unsigned long i = 0; i < nms_result.size(); ++i)
             {
                 int idx = nms_result[ i ];
 
-                result::Detection det;
+                output::Detection det;
                 det.label_id = label_ids[ idx ];
                 det.label    = labels[ det.label_id ];
                 det.conf     = confidences[ idx ];

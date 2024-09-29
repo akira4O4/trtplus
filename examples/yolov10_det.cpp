@@ -117,7 +117,7 @@ int main(int argc, char const* argv[])
             auto    x_factor   = curr_image.cols / input_shape.w;
             auto    y_factor   = curr_image.rows / input_shape.h;
 
-            std::vector<result::Detection> detections{};
+            std::vector<output::Detection> detections{};
 
             for (int row = 0; row < output_shape.rows; ++row)
             {
@@ -126,7 +126,7 @@ int main(int argc, char const* argv[])
 
                 if (scores >= conf_thr)
                 {
-                    result::Detection det;
+                    output::Detection det;
 
                     int x1 = int(data[ 0 ] * x_factor);
                     int y1 = int(data[ 1 ] * y_factor);
