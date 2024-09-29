@@ -1,9 +1,5 @@
-//
-// Created by main on 24-4-11.
-//
-
-#ifndef MAIN_CPU_POSTPROCESS_H
-#define MAIN_CPU_POSTPROCESS_H
+#ifndef CPU_POSTPROCESS_H
+#define CPU_POSTPROCESS_H
 
 #include "algorithm"
 #include "iostream"

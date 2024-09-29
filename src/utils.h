@@ -2,8 +2,8 @@
 #define UTILS_H
 
 #include "NvInfer.h"
+#include "io.h"
 #include "iostream"
-#include "result.hpp"
 #include "utils.h"
 #include <experimental/filesystem>
 #include <opencv2/core/core.hpp>
@@ -79,7 +79,7 @@ std::vector<cv::Scalar> generate_color_list(int numColors);
 
 std::string get_basename(const std::string& filePath);
 
-cv::Mat draw_box(const cv::Mat& image, const std::vector<result::Detection>& detections,
+cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections,
                  std::vector<cv::Scalar> colors);
 
 template <typename T>

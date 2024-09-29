@@ -4,9 +4,9 @@
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
+#include "src/io.h"
 #include "src/memory.h"
 #include "src/model.h"
-#include "src/result.hpp"
 #include "src/utils.h"
 #include "unistd.h"
 #include "vector"
@@ -45,26 +45,30 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_det_dims = model.get_binding_dims(1);
     nvinfer1::Dims output_seg_dims = model.get_binding_dims(2);
 
-    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    input::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
 
-    result::YoloDetectionOutput output_det_shape = {1, output_det_dims.d[ 0 ]};
-    output_det_shape.dimensions                  = output_det_dims.d[ 1 ];
-    output_det_shape.rows                        = output_det_dims.d[ 2 ];
+    output::YoloDetection output_det_shape = {1};
+    output_det_shape.bs                    = output_det_dims.d[ 0 ];
+    output_det_shape.rows                  = output_det_dims.d[ 2 ];
+    output_det_shape.dimensions            = output_det_dims.d[ 1 ];
 
-    result::YoloSegmentationOutput output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
-                                                       output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
+    output::YoloSegmentation output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
+                                                 output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
 
-    input_shape.info();
-    output_det_shape.info();
-    output_seg_shape.info();
+    input_shape.print();
+    output_det_shape.print();
+    output_seg_shape.print();
 
-    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
-    size_t output_mem_size = output_seg_shape.volume() * kFLOAT32;
+    size_t input_mem_size      = input_shape.volume() * kFLOAT32;
+    size_t output_det_mem_size = output_det_shape.volume() * kFLOAT32;
+    size_t output_seg_mem_size = output_seg_shape.volume() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
-    INFO("Output memory size: %d Byte", output_mem_size);
+    INFO("Output det memory size: %d Byte", output_det_mem_size);
+    INFO("Output seg memory size: %d Byte", output_seg_mem_size);
 
-    auto input_memory  = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
-    auto output_memory = std::make_shared<trt::Memory>(0, output_mem_size, true, stream);
+    auto input_memory      = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
+    auto output_det_memory = std::make_shared<trt::Memory>(1, output_det_mem_size, true, stream);
+    auto output_seg_memory = std::make_shared<trt::Memory>(2, output_seg_mem_size, true, stream);
 
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 

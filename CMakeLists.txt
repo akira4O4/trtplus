@@ -11,7 +11,13 @@ message("PROJECT_VERSION_MAJOR: " ${PROJECT_VERSION_MAJOR})
 message("PROJECT_VERSION_MINOR: " ${PROJECT_VERSION_MINOR})
 message("PROJECT_VERSION_PATH:  " ${PROJECT_VERSION_PATCH})
 
-# SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)   
+# SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+set(OpenCV_HOME $ENV{OpenCV_HOME})
+set(TensorRT_HOME $ENV{TensorRT_HOME})
+
+message("OpenCV_HOME: "${OpenCV_HOME})
+message("TensorRT_HOME: "${TensorRT_HOME})
+
 set(OpenCV_HOME "/home/seeking/llf/opencv")
 set(TRT_HOME "/home/seeking/llf/TensorRT")
 set(CUDA_HOME "/usr/local/cuda")

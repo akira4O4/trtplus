@@ -1,11 +1,6 @@
-//
-// Created by main on 24-4-11.
-//
+#ifndef GPU_PREPROCESS_H
+#define GPU_PREPROCESS_H
 
-#ifndef MAIN_GPU_PREPROCESS_H
-#define MAIN_GPU_PREPROCESS_H
-
-#include <opencv2/opencv.hpp>
 namespace gpu
 {
 }

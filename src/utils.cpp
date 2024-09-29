@@ -137,13 +137,13 @@ std::string get_basename(const std::string& filePath)
     return filePath.substr(pos + 1);
 }
 
-cv::Mat draw_box(const cv::Mat& image, const std::vector<result::Detection>& detections, std::vector<cv::Scalar> colors)
+cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections, std::vector<cv::Scalar> colors)
 {
     cv::Mat imageCopy = image.clone();
 
     for (int n = 0; n < detections.size(); ++n)
     {
-        result::Detection det = detections[ n ];
+        output::Detection det = detections[ n ];
 
         auto x     = det.box.x;
         auto y     = det.box.y;

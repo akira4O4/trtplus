@@ -14,8 +14,6 @@
 namespace trt
 {
 
-namespace nv = nvinfer1;
-
 template <typename T>
 void delete_pointer(T* ptr)
 {
@@ -42,7 +40,7 @@ std::shared_ptr<T> make_shared(T* ptr)
 
 //-----------------------------------------------------------
 
-class NVLogger : public nv::ILogger
+class NVLogger : public nvinfer1::ILogger
 {
   public:
     static NVLogger& instance()
@@ -56,7 +54,7 @@ class NVLogger : public nv::ILogger
 
     ~NVLogger() override = default;
 
-    using Severity = nv::ILogger::Severity;
+    using Severity = nvinfer1::ILogger::Severity;
 
     void log(Severity severity, const char* msg) noexcept override
     {
@@ -103,10 +101,10 @@ class Model
     std::string          model_path_;
     std::vector<uint8_t> data_{};
 
-    cudaStream_t                           stream_  = nullptr;
-    std::shared_ptr<nv::IRuntime>          runtime_ = nullptr;
-    std::shared_ptr<nv::ICudaEngine>       engine_  = nullptr;
-    std::shared_ptr<nv::IExecutionContext> context_ = nullptr;
+    cudaStream_t                                 stream_  = nullptr;
+    std::shared_ptr<nvinfer1::IRuntime>          runtime_ = nullptr;
+    std::shared_ptr<nvinfer1::ICudaEngine>       engine_  = nullptr;
+    std::shared_ptr<nvinfer1::IExecutionContext> context_ = nullptr;
 
     std::unordered_map<uchar, nvinfer1::Dims> bindings_{};
     std::unordered_map<uchar, nvinfer1::Dims> inputs_{};
@@ -160,9 +158,9 @@ class Model
 
     void reset();
 
-    nv::Dims get_binding_dims(uchar binding_index);
+    nvinfer1::Dims get_binding_dims(uchar binding_index);
 
-    bool set_binding_dims(uchar binding_index, nv::Dims dims);
+    bool set_binding_dims(uchar binding_index, nvinfer1::Dims dims);
 
     bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 

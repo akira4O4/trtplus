@@ -1,12 +1,9 @@
-//
-// Created by seeking on 9/23/24.
-//
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
+#include "src/io.h"
 #include "src/memory.h"
 #include "src/model.h"
-#include "src/result.hpp"
 #include "src/utils.h"
 #include "unistd.h"
 #include "vector"
@@ -14,15 +11,12 @@
 
 int main(int argc, char const* argv[])
 {
-    uchar            device              = 0;
-    float            conf_thr            = 0.5;
-    float            iou_thr             = 0.6;
-    std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
+    auto device      = 0;
+    auto model_path  = "";
+    auto images_dir  = "";
+    auto labels_file = "";
 
-    std::string model_path  = "";
-    std::string images_dir  = "";
-    std::string output_dir  = "";
-    std::string labels_file = "";
+    std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
@@ -41,31 +35,24 @@ int main(int argc, char const* argv[])
         }
     }
 
-    nvinfer1::Dims input_dims      = model.get_binding_dims(0);
-    nvinfer1::Dims output_det_dims = model.get_binding_dims(1);
-    nvinfer1::Dims output_seg_dims = model.get_binding_dims(2);
+    nvinfer1::Dims input_dims  = model.get_binding_dims(0);
+    nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
-    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    input::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    output::Classification output_shape = {1, output_dims.d[ 0 ], output_dims.d[ 1 ]};
+    input_shape.print();
+    output_shape.print();
 
-    result::YoloDetectionOutput output_det_shape = {1, output_det_dims.d[ 0 ]};
-    output_det_shape.dimensions                  = output_det_dims.d[ 1 ];
-    output_det_shape.rows                        = output_det_dims.d[ 2 ];
-
-    result::YoloSegmentationOutput output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
-                                                       output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
-
-    input_shape.info();
-    output_det_shape.info();
-    output_seg_shape.info();
-
-    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
-    size_t output_mem_size = output_seg_shape.volume() * kFLOAT32;
+    //----------------------------------------------------------------------
+    size_t input_mem_size  = input_shape.volume() * kFLOAT32;
+    size_t output_mem_size = output_shape.volume() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
     INFO("Output memory size: %d Byte", output_mem_size);
 
     auto input_memory  = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
-    auto output_memory = std::make_shared<trt::Memory>(0, output_mem_size, true, stream);
+    auto output_memory = std::make_shared<trt::Memory>(1, output_mem_size, true, stream);
 
+    //-----------------------------------------------------------------------
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 
     std::vector<cv::String> image_paths = get_image_paths(images_dir, "png");
@@ -75,10 +62,6 @@ int main(int argc, char const* argv[])
     std::vector<cv::String> batch_images_path;
 
     std::vector<std::string> labels = load_label_from_txt(labels_file);
-
-    auto nc         = labels.size();
-    auto color_list = generate_color_list(nc);
-
     for (int i = 0; i < images.size(); ++i)
     {
 
@@ -89,9 +72,10 @@ int main(int argc, char const* argv[])
         if (batch_images.size() != input_shape.bs)
             continue;
 
-        // Preprocess --------------------------------------------------------------------------------------------------
         cv::Mat out;
-        auto    host_ptr = input_memory->get_cpu_ptr<float>();
+
+        // pre-process
+        auto host_ptr = input_memory->get_cpu_ptr<float>();
         for (int n = 0; n < input_shape.bs; ++n)
         {
             cv::Mat img = batch_images.at(n);
@@ -110,23 +94,17 @@ int main(int argc, char const* argv[])
         model.forward(bindings, stream, nullptr);
         output_memory->to_cpu();
 
-        // Decode ------------------------------------------------------------------------------------------------------
+        //--------------------------------------------------------------------------------------------------------------
 
         auto output_cpu_ptr = output_memory->get_cpu_ptr<float>();
         ASSERT_PTR(output_cpu_ptr);
+        auto nc = labels.size();
 
-        for (int n = 0; n < input_shape.bs; n++)
+        for (int k = 0; k < input_shape.bs; k++)
         {
-
-            //            size_t offset     = n * output_shape.rows * output_shape.dimensions;
-            //            auto   batch_data = output_cpu_ptr + offset;
-            //
-            //            cv::Mat     draw_img = draw_box(curr_image, detections, color_list);
-            //            std::string basename = get_basename(batch_images_path[ n ]);
-            //
-            //            std::string draw_image_save_path = output_dir + "/" + basename;
-            //            cv::imwrite(draw_image_save_path, draw_img);
-            //            INFO("Save: %s", draw_image_save_path.c_str());
+            size_t offset  = k * nc;
+            auto   max_idx = cpu::argmax(output_cpu_ptr + offset, nc);
+            INFO("Prediction-> label: %s | score:%f", labels[ max_idx ].c_str(), output_cpu_ptr[ max_idx ]);
         }
         INFO("Done.\n");
 

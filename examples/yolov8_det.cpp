@@ -1,9 +1,9 @@
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
+#include "src/io.h"
 #include "src/memory.h"
 #include "src/model.h"
-#include "src/result.hpp"
 #include "src/utils.h"
 #include "unistd.h"
 #include "vector"
@@ -42,16 +42,16 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_dims = model.get_binding_dims(1);
 
     // yolov8 output shape=[bs,dimensions,rows]
-    result::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    result::YoloDetectionOutput output_shape = {1};
-    output_shape.bs                          = output_dims.d[ 0 ];
-    output_shape.dimensions                  = output_dims.d[ 1 ];
-    output_shape.rows                        = output_dims.d[ 2 ];
+    input::NCHW           input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    output::YoloDetection output_shape = {1};
+    output_shape.bs                    = output_dims.d[ 0 ];
+    output_shape.rows                  = output_dims.d[ 2 ];
+    output_shape.dimensions            = output_dims.d[ 1 ];
 
-    input_shape.info();
-    output_shape.info();
+    input_shape.print();
+    output_shape.print();
 
-    size_t input_mem_size  = input_shape.NxCxHxW() * kFLOAT32;
+    size_t input_mem_size  = input_shape.volume() * kFLOAT32;
     size_t output_mem_size = output_shape.volume() * kFLOAT32;
     INFO("Input memory size: %d Byte", input_mem_size);
     INFO("Output memory size: %d Byte", output_mem_size);
