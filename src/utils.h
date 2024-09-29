@@ -106,4 +106,6 @@ std::vector<T> xywh2xyxy(std::vector<T> xywh)
     return xyxy;
 }
 
+auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat;
+
 #endif

@@ -164,3 +164,18 @@ cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& det
     // 返回绘制后的图像副本
     return imageCopy;
 }
+
+auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat
+{
+    cv::Mat resized_mask;
+
+    if (mask.size() != image.size())
+        cv::resize(mask, resized_mask, image.size());
+    else
+        resized_mask = mask;
+
+    cv::Mat output;
+
+    cv::addWeighted(image, 0.3, resized_mask, 0.7, 0, output);
+    return output;
+}
