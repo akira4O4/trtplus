@@ -17,7 +17,7 @@ int main(int argc, char const* argv[])
     uchar              device              = 0;
     cv::Scalar         mean                = {0.485, 0.456, 0.406};
     cv::Scalar         std                 = {0.229, 0.224, 0.225};
-    std::vector<float> thr                 = {-1, 100, 100, 100, 100, 100};
+//    std::vector<float> thr                 = {80, 0};
     std::vector<int>   dynamic_input_shape = {2, 3, 640, 640}; // if your model is dynamic
 
     std::string model_path =
