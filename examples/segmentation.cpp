@@ -14,11 +14,11 @@
 
 int main(int argc, char const* argv[])
 {
+
     uchar            device              = 0;
-    float            conf_thr            = 0.5;
-    float            iou_thr             = 0.6;
-    cv::Scalar       mean                = {0.485, 0.456, 0.406};
-    cv::Scalar       std                 = {0.229, 0.224, 0.225};
+    cv::Scalar       mean                = {0.485, 0.456, 0.406}; // RGB
+    cv::Scalar       std                 = {0.229, 0.224, 0.225}; // RGB
+    std::vector<int> thresholds          = {-1, 10, 10, 100, 100, 100};
     std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
 
     std::string model_path  = "/home/seeking/llf/code/trtplus/assets/F/models/1x3x256x256.fp32.static.engine";
@@ -71,8 +71,9 @@ int main(int argc, char const* argv[])
 
     std::vector<std::string> labels = load_label_from_txt(labels_file);
 
-    auto nc         = labels.size();
-    auto color_list = generate_color_list(nc);
+    int nc = labels.size();
+
+    std::vector<cv::Scalar> color_list = generate_color_list(nc);
 
     for (int i = 0; i < images.size(); ++i)
     {
@@ -115,18 +116,46 @@ int main(int argc, char const* argv[])
 
         for (int n = 0; n < input_shape.bs; n++)
         {
-            cv::Mat mask;
             cv::Mat curr_image = batch_images[ n ];
+            int     iw         = curr_image.cols;
+            int     ih         = curr_image.rows;
 
             size_t offset     = n * output_shape.c * output_shape.w * output_shape.h;
             auto   batch_data = output_cpu_ptr + offset;
 
-            // Draw and save image.
-            //            cv::Mat     draw_img             = merge_image(curr_image, mask);
-            //            std::string basename             = get_basename(batch_images_path[ n ]);
-            //            std::string draw_image_save_path = output_dir + "/" + basename;
-            //            cv::imwrite(draw_image_save_path, draw_img);
-            //            INFO("Save: %s", draw_image_save_path.c_str());
+            // CHW(ptr)->HWC(Mat)
+            // mask.shape=[h,w,c],c=1
+            cv::Mat mask = cpu::mask2mat(batch_data, cv::Size(output_shape.w, output_shape.h));
+            mask.convertTo(mask, CV_8UC1);
+            // Resize
+            if (iw != output_shape.w || ih != output_shape.h)
+                mask = cpu::resize(mask, cv::Size(iw, ih));
+
+            cv::Mat draw_image(output_shape.h, output_shape.w, CV_8UC3, cv::Scalar(0, 0, 0));
+            for (uchar label_id = 0; label_id < labels.size(); ++label_id)
+            {
+
+                std::string label = labels[ label_id ];
+                int         thr   = thresholds[ label_id ];
+
+                // Skip some label
+                if (thr == -1)
+                    continue;
+
+                cv::Mat temp;
+                cv::compare(mask, label_id, temp, cv::CMP_EQ);
+                int num_of_pixel = cv::countNonZero(temp);
+                if (num_of_pixel >= thr)
+                {
+                    draw_image.setTo(color_list[ label_id ], temp);
+                }
+            }
+            // Draw and save image
+            cv::Mat     draw_img             = merge_image(curr_image, draw_image);
+            std::string basename             = get_basename(batch_images_path[ n ]);
+            std::string draw_image_save_path = output_dir + "/" + basename;
+            cv::imwrite(draw_image_save_path, draw_img);
+            INFO("Save: %s", draw_image_save_path.c_str());
         }
         INFO("Done.\n");
 
