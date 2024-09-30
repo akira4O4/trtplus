@@ -62,7 +62,7 @@ struct Segmentation
 {
     int id = -1;
     int bs = 0;
-    int c  = 0; // channels
+    int c  = 0; // channels or num_classes+1
     int h  = 0;
     int w  = 0;
 
@@ -74,6 +74,7 @@ struct Segmentation
                   << std::endl;
     }
 };
+
 struct YoloDetection
 {
     int id         = -1;
@@ -90,22 +91,6 @@ struct YoloDetection
     }
 };
 
-struct YoloSegmentation
-{
-    int id = -1;
-    int bs = 0;
-    int nb = 0; // num of box
-    int h  = 0;
-    int w  = 0;
-
-    size_t volume() const { return bs * nb * w * h; };
-
-    void print() const
-    {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " nbox: " << nb << " h: " << h << " w: " << w << " ]"
-                  << std::endl;
-    }
-};
 
 } // namespace output
 

@@ -82,30 +82,6 @@ std::string get_basename(const std::string& filePath);
 cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections,
                  std::vector<cv::Scalar> colors);
 
-template <typename T>
-std::vector<T> xyxy2xywh(std::vector<T> xyxy)
-{
-    T x = xyxy[ 0 ];
-    T y = xyxy[ 1 ];
-    T w = xyxy[ 2 ] - xyxy[ 0 ];
-    T h = xyxy[ 3 ] - xyxy[ 1 ];
-
-    std::vector<T> xywh{x, y, w, h};
-    return xywh;
-}
-
-template <typename T>
-std::vector<T> xywh2xyxy(std::vector<T> xywh)
-{
-    T x1 = xywh[ 0 ];
-    T y1 = xywh[ 1 ];
-    T x2 = xywh[ 0 ] + xywh[ 2 ];
-    T y2 = xywh[ 1 ] + xywh[ 3 ];
-
-    std::vector<T> xyxy{x1, y1, x2, y2};
-    return xyxy;
-}
-
 auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat;
 
 #endif

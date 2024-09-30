@@ -48,6 +48,32 @@ cv::Mat hwc2chw(const cv::Mat& input)
     return output;
 }
 
+cv::Mat chw2hwc(cv::Mat& input)
+{
+    int channels = input.size[ 0 ];
+    int height   = input.size[ 1 ];
+    int width    = input.size[ 2 ];
+
+    cv::Mat output(height, width, CV_32FC3);
+
+    // 将 CHW 数据复制到 HWC 格式
+    for (int h = 0; h < height; ++h)
+    {
+        for (int w = 0; w < width; ++w)
+        {
+            for (int c = 0; c < channels; ++c)
+            {
+                float value = input.ptr<float>(c)[ h * width + w ];
+
+                output.at<cv::Vec3f>(h, w)[ c ] = value;
+                //                output.at<cv::Vec3f>(h, w)[ c ] = input.at<float>(c, h, w);
+            }
+        }
+    }
+
+    return output;
+}
+
 cv::Mat bgr2rgb(const cv::Mat& input)
 {
 
@@ -56,6 +82,7 @@ cv::Mat bgr2rgb(const cv::Mat& input)
 
     return output;
 }
+
 cv::Mat rgb2bgr(const cv::Mat& input)
 {
 
@@ -64,6 +91,7 @@ cv::Mat rgb2bgr(const cv::Mat& input)
 
     return output;
 }
+
 cv::Mat gray2rgb(const cv::Mat& input)
 {
 
@@ -72,6 +100,7 @@ cv::Mat gray2rgb(const cv::Mat& input)
 
     return output;
 }
+
 cv::Mat gray2bgr(const cv::Mat& input)
 {
 
@@ -98,8 +127,6 @@ cv::Mat normalize(const cv::Mat& input)
 
 cv::Mat letterbox(const cv::Mat& input, const cv::Size& wh)
 {
-    if (input.cols == wh.width && input.rows == wh.height)
-        return input;
 
     int iw = input.cols;
     int ih = input.rows;
@@ -129,8 +156,6 @@ cv::Mat letterbox(const cv::Mat& input, const cv::Size& wh)
 
 cv::Mat resize(const cv::Mat& input, const cv::Size& wh)
 {
-    if (input.cols == wh.width && input.rows == wh.height)
-        return input;
 
     cv::Mat out;
     cv::resize(input, out, wh);

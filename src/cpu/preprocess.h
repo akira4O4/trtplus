@@ -10,7 +10,7 @@ void hwc2chw(cv::Mat& img, float* out);
 
 cv::Mat hwc2chw(const cv::Mat& img);
 
-void chw2hwc(cv::Mat& img, float* out);
+cv::Mat chw2hwc(cv::Mat& input);
 
 cv::Mat bgr2rgb(const cv::Mat& input);
 

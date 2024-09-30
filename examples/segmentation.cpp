@@ -21,10 +21,10 @@ int main(int argc, char const* argv[])
     std::vector<int> thresholds          = {-1, 10, 10, 100, 100, 100};
     std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
 
-    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/F/models/1x3x256x256.fp32.static.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/F/images";
-    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/F/output";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/F/labels.txt";
+    std::string model_path  = "";
+    std::string images_dir  = "";
+    std::string output_dir  = "";
+    std::string labels_file = "";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
