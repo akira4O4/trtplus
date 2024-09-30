@@ -14,15 +14,17 @@
 
 int main(int argc, char const* argv[])
 {
-    uchar            device              = 0;
-    float            conf_thr            = 0.5;
-    float            iou_thr             = 0.6;
-    std::vector<int> dynamic_input_shape = {2, 3, 256, 256}; // if your model is dynamic
+    uchar              device              = 0;
+    cv::Scalar         mean                = {0.485, 0.456, 0.406};
+    cv::Scalar         std                 = {0.229, 0.224, 0.225};
+    std::vector<float> thr                 = {-1, 100, 100, 100, 100, 100};
+    std::vector<int>   dynamic_input_shape = {2, 3, 640, 640}; // if your model is dynamic
 
-    std::string model_path  = "";
-    std::string images_dir  = "";
-    std::string output_dir  = "";
-    std::string labels_file = "";
+    std::string model_path =
+        "/home/seeking/llf/code/trtplus/assets/coco8-seg/models/v8n-seg-1x3x640x640.fp32.static.engine";
+    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/coco8-seg/images";
+    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/coco8-seg/output";
+    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/coco8-seg/labels.txt";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
@@ -49,8 +51,8 @@ int main(int argc, char const* argv[])
 
     output::YoloDetection output_det_shape = {1};
     output_det_shape.bs                    = output_det_dims.d[ 0 ];
-    output_det_shape.rows                  = output_det_dims.d[ 2 ];
     output_det_shape.dimensions            = output_det_dims.d[ 1 ];
+    output_det_shape.rows                  = output_det_dims.d[ 2 ];
 
     output::YoloSegmentation output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
                                                  output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
@@ -67,12 +69,12 @@ int main(int argc, char const* argv[])
     INFO("Output seg memory size: %d Byte", output_seg_mem_size);
 
     auto input_memory      = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
-    auto output_det_memory = std::make_shared<trt::Memory>(1, output_det_mem_size, true, stream);
+    auto output_det_memory = std::make_shared<trt::Memory>(2, output_det_mem_size, true, stream);
     auto output_seg_memory = std::make_shared<trt::Memory>(2, output_seg_mem_size, true, stream);
 
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 
-    std::vector<cv::String> image_paths = get_image_paths(images_dir, "png");
+    std::vector<cv::String> image_paths = get_image_paths(images_dir, "jpg");
     std::vector<cv::Mat>    images      = get_images(image_paths);
 
     std::vector<cv::Mat>    batch_images;
@@ -100,37 +102,45 @@ int main(int argc, char const* argv[])
         {
             cv::Mat img = batch_images.at(n);
 
+            //            out=cpu::letterbox(img,input_wh);
             out = cpu::resize(img, input_wh);
             out = cpu::bgr2rgb(out);
             out = cpu::normalize(out);
             out = cpu::hwc2chw(out);
 
             size_t offset = n * input_shape.CxHxW();
-            cpu::hwc2chw(out, host_ptr + offset);
             std::memcpy(host_ptr + offset, out.ptr<float>(0), input_shape.CxHxW() * sizeof(float));
-
         }
 
         // Infer--------------------------------------------------------------------------------------------------------
         input_memory->to_gpu();
-        void* bindings[ 2 ]{input_memory->get_gpu_ptr(), output_memory->get_gpu_ptr()};
+        void* bindings[ 3 ]{input_memory->get_gpu_ptr(), output_det_memory->get_gpu_ptr(),
+                            output_seg_memory->get_gpu_ptr()};
         model.forward(bindings, stream, nullptr);
-        output_memory->to_cpu();
+        output_det_memory->to_cpu();
+        output_seg_memory->to_cpu();
 
         // Decode ------------------------------------------------------------------------------------------------------
 
-        auto output_cpu_ptr = output_memory->get_cpu_ptr<float>();
-        ASSERT_PTR(output_cpu_ptr);
+        auto output_det_ptr = output_det_memory->get_cpu_ptr<float>();
+        auto output_seg_ptr = output_seg_memory->get_cpu_ptr<float>();
+
+        ASSERT_PTR(output_det_ptr);
+        ASSERT_PTR(output_seg_ptr);
 
         for (int n = 0; n < input_shape.bs; n++)
         {
+            cv::Mat mask;
+            cv::Mat curr_image = batch_images[ n ];
 
-            //            size_t offset     = n * output_shape.rows * output_shape.dimensions;
-            //            auto   batch_data = output_cpu_ptr + offset;
-            //
-            //            cv::Mat     draw_img = draw_box(curr_image, detections, color_list);
-            //            std::string basename = get_basename(batch_images_path[ n ]);
-            //
+            size_t det_offset = n * output_det_shape.rows * output_det_shape.dimensions;
+            size_t seg_offset = n * output_seg_shape.nq * output_seg_shape.h * output_seg_shape.w;
+            auto   det_data   = output_det_ptr + det_offset;
+            auto   seg_data   = output_seg_ptr + seg_offset;
+
+            // Draw and save image.
+            //            cv::Mat     draw_img             = merge_image(curr_image, mask);
+            //            std::string basename             = get_basename(batch_images_path[ n ]);
             //            std::string draw_image_save_path = output_dir + "/" + basename;
             //            cv::imwrite(draw_image_save_path, draw_img);
             //            INFO("Save: %s", draw_image_save_path.c_str());
