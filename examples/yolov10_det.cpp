@@ -13,7 +13,6 @@ int main(int argc, char const* argv[])
 {
     uchar device   = 0;
     float conf_thr = 0.5;
-    float iou_thr  = 0.6;
 
     std::vector<int> dynamic_input_shape = {2, 3, 256, 256};
 
