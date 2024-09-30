@@ -133,7 +133,7 @@ int main(int argc, char const* argv[])
                     int x2 = int(data[ 2 ] * x_factor);
                     int y2 = int(data[ 3 ] * y_factor);
 
-                    std::vector<int> xywh = xyxy2xywh(std::vector<int>{x1, y1, x2, y2});
+                    std::vector<int> xywh = cpu::xyxy2xywh(std::vector<int>{x1, y1, x2, y2});
 
                     det.label_id = label_id;
                     det.label    = labels[ label_id ];
