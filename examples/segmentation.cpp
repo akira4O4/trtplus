@@ -124,8 +124,8 @@ int main(int argc, char const* argv[])
             auto   batch_data = output_cpu_ptr + offset;
 
             // CHW(ptr)->HWC(Mat)
-            // mask.shape=[h,w,c],c=1
-            cv::Mat mask = cpu::mask2mat(batch_data, cv::Size(output_shape.w, output_shape.h));
+            // mask.shape=[h,w]
+            cv::Mat mask(output_shape.h, output_shape.w, CV_32F, batch_data);
             mask.convertTo(mask, CV_8UC1);
             // Resize
             if (iw != output_shape.w || ih != output_shape.h)
