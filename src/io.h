@@ -95,15 +95,16 @@ struct YoloSegmentation
 {
     int id = -1;
     int bs = 0;
-    int nq = 0; // num_queries
+    int c  = 0;
     int h  = 0;
     int w  = 0;
 
-    size_t volume() const { return bs * nq * h * w; };
+    size_t volume() const { return bs * c * h * w; };
 
     void print() const
     {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " h: " << h << " w: " << w << " ]" << std::endl;
+        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+                  << std::endl;
     }
 };
 
