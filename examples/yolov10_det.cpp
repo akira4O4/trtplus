@@ -27,7 +27,7 @@ int main(int argc, char const* argv[])
     auto stream = model.get_stream();
     if (model.is_dynamic())
     {
-        if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
+        if (model.set_binding_dims("images", vector2dims(dynamic_input_shape)))
         {
             model.decode_model_bindings();
             INFO("Setting Successful .");
@@ -38,12 +38,12 @@ int main(int argc, char const* argv[])
         }
     }
 
-    nvinfer1::Dims input_dims  = model.get_binding_dims(0);
-    nvinfer1::Dims output_dims = model.get_binding_dims(1);
+    nvinfer1::Dims input_dims  = model.get_binding_dims("images");
+    nvinfer1::Dims output_dims = model.get_binding_dims("output0");
 
     // yolov10 output shape=[bs,rows,dimensions]
-    input::NCHW           input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
-    output::YoloDetection output_shape = {1, output_dims.d[ 0 ], output_dims.d[ 1 ], output_dims.d[ 2 ]};
+    input::NCHW input_shape = {"images", input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    output::YoloDetection output_shape = {"output0", output_dims.d[ 0 ], output_dims.d[ 1 ], output_dims.d[ 2 ]};
 
     input_shape.print();
     output_shape.print();
@@ -54,7 +54,7 @@ int main(int argc, char const* argv[])
     INFO("Output memory size: %d Byte", output_mem_size);
 
     auto input_memory  = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
-    auto output_memory = std::make_shared<trt::Memory>(0, output_mem_size, true, stream);
+    auto output_memory = std::make_shared<trt::Memory>(1, output_mem_size, true, stream);
 
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 
