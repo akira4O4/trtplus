@@ -114,7 +114,7 @@ void Model::decode_model_status()
 
     for (int i = 0; i < num_of_bindings_; ++i)
     {
-        auto dims = get_binding_dims(i);
+        auto dims = get_binding_dims(idx2name(i));
         if (dims.d[ 0 ] == -1)
         {
             is_dynamic_ = true;
@@ -140,30 +140,29 @@ void Model::reset()
     runtime_.reset();
 }
 
-nvinfer1::Dims Model::get_binding_dims(uchar binding_index)
+// nvinfer1::Dims Model::get_binding_dims(uchar binding_index)
+nvinfer1::Dims Model::get_binding_dims(const std::string& name)
 {
 #if NV_TENSORRT_MINOR < 5
-    return context_->getBindingDimensions(index);
+    return context_->getBindingDimensions(name2idx(name));
 #elif NV_TENSORRT_MINOR >= 5
-    return context_->getTensorShape(idx2name(binding_index));
+    return context_->getTensorShape(name.c_str());
 #endif
 }
 
-bool Model::set_binding_dims(uchar binding_index, nvinfer1::Dims dims)
+bool Model::set_binding_dims(const std::string& name, nvinfer1::Dims dims)
 {
-    auto item = inputs_.find(binding_index);
+    auto item = inputs_.find(name);
     if (item == inputs_.end())
     {
         return false;
     }
     else
     {
-        auto name = idx2name(item->first);
-
 #if NV_TENSORRT_MINOR < 5
-        return context_->setBindingDimensions(index, dims);
+        return context_->setBindingDimensions(name2idx(name), dims);
 #elif NV_TENSORRT_MINOR >= 5
-        return context_->setInputShape(name, dims);
+        return context_->setInputShape(name.c_str(), dims);
 #endif
     }
 }
@@ -186,18 +185,18 @@ void Model::decode_model_bindings()
     {
         if (engine_->bindingIsInput(i))
         {
-            auto name      = engine_->getBindingName(i);
-            auto dims      = context_->getBindingDimensions(i);
-            inputs_[ i ]   = dims;
-            bindings_[ i ] = dims;
+            auto name         = engine_->getBindingName(i);
+            auto dims         = context_->getBindingDimensions(i);
+            inputs_[ name ]   = dims;
+            bindings_[ name ] = dims;
         }
         else
         {
 
-            auto name      = engine_->getBindingName(i);
-            auto dims      = context_->getBindingDimensions(i);
-            outputs_[ i ]  = dims;
-            bindings_[ i ] = dims;
+            auto name         = engine_->getBindingName(i);
+            auto dims         = context_->getBindingDimensions(i);
+            outputs_[ name ]  = dims;
+            bindings_[ name ] = dims;
         }
     }
 }
@@ -214,13 +213,13 @@ void Model::decode_model_bindings()
         auto dims = context_->getTensorShape(name);
         if (mode == nvinfer1::TensorIOMode::kINPUT)
         {
-            inputs_[ i ]   = dims;
-            bindings_[ i ] = dims;
+            inputs_[ name ]   = dims;
+            bindings_[ name ] = dims;
         }
         else if (mode == nvinfer1::TensorIOMode::kOUTPUT)
         {
-            outputs_[ i ]  = dims;
-            bindings_[ i ] = dims;
+            outputs_[ name ]  = dims;
+            bindings_[ name ] = dims;
         }
     }
 }
@@ -234,10 +233,9 @@ void Model::decode_model_inputs()
     {
         if (engine_->bindingIsInput(i))
         {
-            auto         name = engine_->getBindingName(i);
-            auto         dims = context_->getBindingDimensions(i);
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_[ i ]      = nchw;
+            auto name       = engine_->getBindingName(i);
+            auto dims       = context_->getBindingDimensions(i);
+            inputs_[ name ] = dims;
         }
     }
 }
@@ -254,8 +252,7 @@ void Model::decode_model_inputs()
         auto input = nvinfer1::TensorIOMode::kINPUT;
         if (mode == input)
         {
-            //            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            inputs_[ i ] = dims;
+            inputs_[ name ] = dims;
         }
     }
 }
@@ -270,10 +267,9 @@ void Model::decode_model_outputs()
         if (!engine_->bindingIsInput(i))
         {
 
-            auto         name = engine_->getBindingName(i);
-            auto         dims = context_->getBindingDimensions(i);
-            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            outputs_[ i ]     = nchw;
+            auto name        = engine_->getBindingName(i);
+            auto dims        = context_->getBindingDimensions(i);
+            outputs_[ name ] = nchw;
         }
     }
 }
@@ -288,8 +284,7 @@ void Model::decode_model_outputs()
         auto dims = context_->getTensorShape(name);
         if (mode == nvinfer1::TensorIOMode::kOUTPUT)
         {
-            //            result::NCHW nchw = {name, i, dims.d[ 0 ], dims.d[ 1 ], dims.d[ 2 ], dims.d[ 3 ]};
-            outputs_[ i ] = dims;
+            outputs_[ name ] = dims;
         }
     }
 }
@@ -302,6 +297,11 @@ char const* Model::idx2name(uchar binding_index)
 #elif NV_TENSORRT_MINOR >= 5
     return engine_->getIOTensorName(binding_index);
 #endif
+}
+
+uchar Model::name2idx(const std::string& name)
+{
+    return engine_->getBindingIndex(name.c_str());
 }
 
 } // namespace trt

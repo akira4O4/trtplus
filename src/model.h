@@ -106,9 +106,9 @@ class Model
     std::shared_ptr<nvinfer1::ICudaEngine>       engine_  = nullptr;
     std::shared_ptr<nvinfer1::IExecutionContext> context_ = nullptr;
 
-    std::unordered_map<uchar, nvinfer1::Dims> bindings_{};
-    std::unordered_map<uchar, nvinfer1::Dims> inputs_{};
-    std::unordered_map<uchar, nvinfer1::Dims> outputs_{};
+    std::unordered_map<std::string, nvinfer1::Dims> bindings_{};
+    std::unordered_map<std::string, nvinfer1::Dims> inputs_{};
+    std::unordered_map<std::string, nvinfer1::Dims> outputs_{};
 
   public:
     Model() = default;
@@ -126,17 +126,17 @@ class Model
 
     void create_stream();
 
-    inline nvinfer1::Dims get_input(uchar binding_index) { return inputs_[ binding_index ]; };
+    inline nvinfer1::Dims get_input(const std::string& name) { return inputs_[ name ]; };
 
-    inline nvinfer1::Dims get_output(uchar binding_index) { return outputs_[ binding_index ]; };
+    inline nvinfer1::Dims get_output(const std::string& name) { return outputs_[ name ]; };
 
-    inline nvinfer1::Dims get_binding(uchar binding_index) { return bindings_[ binding_index ]; };
+    inline nvinfer1::Dims get_binding(const std::string& name) { return bindings_[ name ]; };
 
-    inline std::unordered_map<uchar, nvinfer1::Dims> get_inputs() const { return inputs_; };
+    inline std::unordered_map<std::string, nvinfer1::Dims> get_inputs() const { return inputs_; };
 
-    inline std::unordered_map<uchar, nvinfer1::Dims> get_outputs() const { return outputs_; };
+    inline std::unordered_map<std::string, nvinfer1::Dims> get_outputs() const { return outputs_; };
 
-    inline std::unordered_map<uchar, nvinfer1::Dims> get_bindings() const { return bindings_; };
+    inline std::unordered_map<std::string, nvinfer1::Dims> get_bindings() const { return bindings_; };
 
     inline uchar get_input_size() const { return inputs_.size(); };
 
@@ -158,9 +158,9 @@ class Model
 
     void reset();
 
-    nvinfer1::Dims get_binding_dims(uchar binding_index);
+    nvinfer1::Dims get_binding_dims(const std::string& name);
 
-    bool set_binding_dims(uchar binding_index, nvinfer1::Dims dims);
+    bool set_binding_dims(const std::string& name, nvinfer1::Dims dims);
 
     bool forward(void* const* bindings, cudaStream_t stream, cudaEvent_t* inputConsumed);
 
@@ -173,6 +173,8 @@ class Model
     void decode_model_bindings();
 
     char const* idx2name(uchar binding_index);
+
+    uchar name2idx(const std::string& name);
 
     void decode_model_status();
 };
