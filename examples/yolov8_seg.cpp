@@ -17,14 +17,14 @@ int main(int argc, char const* argv[])
     uchar              device              = 0;
     cv::Scalar         mean                = {0.485, 0.456, 0.406};
     cv::Scalar         std                 = {0.229, 0.224, 0.225};
-//    std::vector<float> thr                 = {80, 0};
+    std::vector<float> thr                 = {-1, 100, 100, 100, 100, 100};
     std::vector<int>   dynamic_input_shape = {2, 3, 640, 640}; // if your model is dynamic
 
     std::string model_path =
-        "/home/seeking/llf/code/trtplus/assets/coco8-seg/models/v8n-seg-1x3x640x640.fp32.static.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/coco8-seg/images";
-    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/coco8-seg/output";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/coco8-seg/labels.txt";
+        "/home/seeking/llf/code/trtplus/assets/coco8/models/v8n-seg-1x3x640x640.fp32.static.engine";
+    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/coco8/images";
+    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/coco8/output";
+    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/coco8/labels.txt";
     //-------------------------------------------------------------------------
 
     auto model = trt::Model(model_path, device);
@@ -43,9 +43,9 @@ int main(int argc, char const* argv[])
         }
     }
 
-    nvinfer1::Dims input_dims      = model.get_binding_dims(0);
-    nvinfer1::Dims output_det_dims = model.get_binding_dims(1);
-    nvinfer1::Dims output_seg_dims = model.get_binding_dims(2);
+    nvinfer1::Dims input_dims      = model.get_binding_dims("images");
+    nvinfer1::Dims output_det_dims = model.get_binding_dims("output0");
+    nvinfer1::Dims output_seg_dims = model.get_binding_dims("output1");
 
     input::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
 
@@ -54,8 +54,8 @@ int main(int argc, char const* argv[])
     output_det_shape.dimensions            = output_det_dims.d[ 1 ];
     output_det_shape.rows                  = output_det_dims.d[ 2 ];
 
-    output::YoloSegmentation output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
-                                                 output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
+    output::Segmentation output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ], output_seg_dims.d[ 2 ],
+                                             output_seg_dims.d[ 3 ]};
 
     input_shape.print();
     output_det_shape.print();
@@ -69,18 +69,17 @@ int main(int argc, char const* argv[])
     INFO("Output seg memory size: %d Byte", output_seg_mem_size);
 
     auto input_memory      = std::make_shared<trt::Memory>(0, input_mem_size, true, stream);
-    auto output_det_memory = std::make_shared<trt::Memory>(2, output_det_mem_size, true, stream);
+    auto output_det_memory = std::make_shared<trt::Memory>(1, output_det_mem_size, true, stream);
     auto output_seg_memory = std::make_shared<trt::Memory>(2, output_seg_mem_size, true, stream);
 
     auto input_wh = cv::Size(input_shape.w, input_shape.h);
 
-    std::vector<cv::String> image_paths = get_image_paths(images_dir, "jpg");
-    std::vector<cv::Mat>    images      = get_images(image_paths);
+    std::vector<cv::String>  image_paths = get_image_paths(images_dir, "jpg");
+    std::vector<cv::Mat>     images      = get_images(image_paths);
+    std::vector<std::string> labels      = load_label_from_txt(labels_file);
 
     std::vector<cv::Mat>    batch_images;
     std::vector<cv::String> batch_images_path;
-
-    std::vector<std::string> labels = load_label_from_txt(labels_file);
 
     auto nc         = labels.size();
     auto color_list = generate_color_list(nc);
@@ -128,13 +127,18 @@ int main(int argc, char const* argv[])
         ASSERT_PTR(output_det_ptr);
         ASSERT_PTR(output_seg_ptr);
 
+        // bbox.dimensions=[(x,y,w,h)+conf+nc+mask_info],mask_info=32
+
+        // bbox output.shape[bs,dimensions,rows] dimensions=[xywh,con,nc,mask_info]
+        // mask output.shape[bs,c,h,w]
+
         for (int n = 0; n < input_shape.bs; n++)
         {
             cv::Mat mask;
             cv::Mat curr_image = batch_images[ n ];
 
             size_t det_offset = n * output_det_shape.rows * output_det_shape.dimensions;
-            size_t seg_offset = n * output_seg_shape.nq * output_seg_shape.h * output_seg_shape.w;
+            size_t seg_offset = n * output_seg_shape.c * output_seg_shape.h * output_seg_shape.w;
             auto   det_data   = output_det_ptr + det_offset;
             auto   seg_data   = output_seg_ptr + seg_offset;
 
