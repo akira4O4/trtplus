@@ -32,7 +32,7 @@ int main(int argc, char const* argv[])
     auto stream = model.get_stream();
     if (model.is_dynamic())
     {
-        if (model.set_binding_dims(0, vector2dims(dynamic_input_shape)))
+        if (model.set_binding_dims("images", vector2dims(dynamic_input_shape)))
         {
             model.decode_model_bindings();
             INFO("Setting Successful .");
@@ -47,15 +47,15 @@ int main(int argc, char const* argv[])
     nvinfer1::Dims output_det_dims = model.get_binding_dims("output0");
     nvinfer1::Dims output_seg_dims = model.get_binding_dims("output1");
 
-    input::NCHW input_shape = {0, input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
+    input::NCHW input_shape = {"images", input_dims.d[ 0 ], input_dims.d[ 1 ], input_dims.d[ 2 ], input_dims.d[ 3 ]};
 
-    output::YoloDetection output_det_shape = {1};
+    output::YoloDetection output_det_shape = {"output0"};
     output_det_shape.bs                    = output_det_dims.d[ 0 ];
     output_det_shape.dimensions            = output_det_dims.d[ 1 ];
     output_det_shape.rows                  = output_det_dims.d[ 2 ];
 
-    output::Segmentation output_seg_shape = {2, output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ], output_seg_dims.d[ 2 ],
-                                             output_seg_dims.d[ 3 ]};
+    output::Segmentation output_seg_shape = {"output1", output_seg_dims.d[ 0 ], output_seg_dims.d[ 1 ],
+                                             output_seg_dims.d[ 2 ], output_seg_dims.d[ 3 ]};
 
     input_shape.print();
     output_det_shape.print();
