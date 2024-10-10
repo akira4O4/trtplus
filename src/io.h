@@ -29,8 +29,7 @@ struct NCHW
 
     void print() const
     {
-        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
-                  << std::endl;
+        std::cout << "Name: " << name << "\tShape: [ " << bs << "," << c << "," << h << "," << w << " ]" << std::endl;
     }
 };
 } // namespace input
@@ -55,10 +54,7 @@ struct Classification
 
     size_t volume() const { return bs * nc; };
 
-    void print() const
-    {
-        std::cout << "Name: " << name << "\tShape: [ bs:" << bs << " nc: " << nc << " ]" << std::endl;
-    }
+    void print() const { std::cout << "Name: " << name << "\tShape: [ " << bs << "," << nc << " ]" << std::endl; }
 };
 
 struct Segmentation
@@ -73,8 +69,7 @@ struct Segmentation
 
     void print() const
     {
-        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
-                  << std::endl;
+        std::cout << "Name: " << name << "\tShape: [ " << bs << "," << c << "," << h << "," << w << " ]" << std::endl;
     }
 };
 
@@ -89,27 +84,26 @@ struct YoloDetection
 
     void print() const
     {
-        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " rows: " << rows << " dimensions: " << dimensions
-                  << " ]" << std::endl;
+        std::cout << "Name: " << name << "\tShape: [ " << bs << "," << rows << "," << dimensions << " ]" << std::endl;
     }
 };
 
-//struct YoloSegmentation
+// struct YoloSegmentation
 //{
-//    int id = -1;
-//    int bs = 0;
-//    int c  = 0;
-//    int h  = 0;
-//    int w  = 0;
+//     int id = -1;
+//     int bs = 0;
+//     int c  = 0;
+//     int h  = 0;
+//     int w  = 0;
 //
-//    size_t volume() const { return bs * c * h * w; };
+//     size_t volume() const { return bs * c * h * w; };
 //
-//    void print() const
-//    {
-//        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
-//                  << std::endl;
-//    }
-//};
+//     void print() const
+//     {
+//         std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+//                   << std::endl;
+//     }
+// };
 
 } // namespace output
 
