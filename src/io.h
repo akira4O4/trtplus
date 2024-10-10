@@ -11,11 +11,11 @@ namespace input
 
 struct NCHW
 {
-    int id = -1;
-    int bs = 0;
-    int c  = 0; // channels
-    int h  = 0;
-    int w  = 0;
+    std::string name;
+    int         bs = 0;
+    int         c  = 0; // channels
+    int         h  = 0;
+    int         w  = 0;
 
     size_t NxC() const { return bs * c; };
 
@@ -29,7 +29,7 @@ struct NCHW
 
     void print() const
     {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
                   << std::endl;
     }
 };
@@ -49,64 +49,67 @@ struct Detection
 
 struct Classification
 {
-    int id = -1;
-    int bs = 0;
-    int nc = 0;
+    std::string name;
+    int         bs = 0;
+    int         nc = 0;
 
     size_t volume() const { return bs * nc; };
 
-    void print() const { std::cout << "Id: " << id << "\tShape: [ bs:" << bs << " nc: " << nc << " ]" << std::endl; }
+    void print() const
+    {
+        std::cout << "Name: " << name << "\tShape: [ bs:" << bs << " nc: " << nc << " ]" << std::endl;
+    }
 };
 
 struct Segmentation
 {
-    int id = -1;
-    int bs = 0;
-    int c  = 0; // channels or num_classes+1
-    int h  = 0;
-    int w  = 0;
+    std::string name;
+    int         bs = 0;
+    int         c  = 0; // channels or num_classes+1
+    int         h  = 0;
+    int         w  = 0;
 
     size_t volume() const { return bs * c * w * h; };
 
     void print() const
     {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
                   << std::endl;
     }
 };
 
 struct YoloDetection
 {
-    int id         = -1;
-    int bs         = 0;
-    int rows       = 0;
-    int dimensions = 0;
+    std::string name;
+    int         bs         = 0;
+    int         rows       = 0;
+    int         dimensions = 0;
 
     size_t volume() const { return bs * rows * dimensions; };
 
     void print() const
     {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " rows: " << rows << " dimensions: " << dimensions
+        std::cout << "Name: " << name << "\tShape: [ bs: " << bs << " rows: " << rows << " dimensions: " << dimensions
                   << " ]" << std::endl;
     }
 };
 
-struct YoloSegmentation
-{
-    int id = -1;
-    int bs = 0;
-    int c  = 0;
-    int h  = 0;
-    int w  = 0;
-
-    size_t volume() const { return bs * c * h * w; };
-
-    void print() const
-    {
-        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
-                  << std::endl;
-    }
-};
+//struct YoloSegmentation
+//{
+//    int id = -1;
+//    int bs = 0;
+//    int c  = 0;
+//    int h  = 0;
+//    int w  = 0;
+//
+//    size_t volume() const { return bs * c * h * w; };
+//
+//    void print() const
+//    {
+//        std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
+//                  << std::endl;
+//    }
+//};
 
 } // namespace output
 
