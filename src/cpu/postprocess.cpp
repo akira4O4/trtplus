@@ -31,26 +31,11 @@ cv::Mat de_normalize(const cv::Mat& input)
     return output;
 }
 
-std::vector<int> xyxy2xywh(std::vector<int> xyxy)
+cv::Mat transpose(const cv::Mat& data)
 {
-    int x = xyxy[ 0 ];
-    int y = xyxy[ 1 ];
-    int w = xyxy[ 2 ] - xyxy[ 0 ];
-    int h = xyxy[ 3 ] - xyxy[ 1 ];
-
-    std::vector<int> xywh{x, y, w, h};
-    return xywh;
-}
-
-std::vector<int> xywh2xyxy(std::vector<int> xywh)
-{
-    int x1 = xywh[ 0 ];
-    int y1 = xywh[ 1 ];
-    int x2 = xywh[ 0 ] + xywh[ 2 ];
-    int y2 = xywh[ 1 ] + xywh[ 3 ];
-
-    std::vector<int> xyxy{x1, y1, x2, y2};
-    return xyxy;
+    cv::Mat out;
+    cv::transpose(data, out);
+    return out;
 }
 
 } // namespace cpu
