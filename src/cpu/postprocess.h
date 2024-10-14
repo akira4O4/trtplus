@@ -11,7 +11,6 @@
 namespace cpu
 {
 
-// input: std::vector<T> list;
 template <typename T>
 inline size_t argmax(const T& data)
 {
@@ -21,7 +20,6 @@ inline size_t argmax(const T& data)
     return std::distance(data.begin(), std::max_element(data.begin(), data.end()));
 }
 
-// input:T num[n]
 template <typename T>
 inline size_t argmax(const T* data, size_t len)
 {
@@ -59,75 +57,52 @@ std::vector<T> softmax(const T* src, const int num_of_label, bool safe = false)
 cv::Mat de_normalize(const cv::Mat& input);
 
 template <typename T>
-std::vector<T> xyxy2xywh(std::vector<T> xyxy)
+cv::Rect_<T> xyxy2xywh(std::vector<T> xyxy)
 {
-    T x = xyxy[ 0 ];
-    T y = xyxy[ 1 ];
-    T w = xyxy[ 2 ] - xyxy[ 0 ];
-    T h = xyxy[ 3 ] - xyxy[ 1 ];
-
-    std::vector<T> xywh{x, y, w, h};
-    return xywh;
+    cv::Rect_<T> out{xyxy[ 0 ], xyxy[ 0 ], xyxy[ 2 ] - xyxy[ 0 ], xyxy[ 3 ] - xyxy[ 1 ]};
+    return out;
 }
 
 template <typename T>
-std::vector<T> xywh2xyxy(std::vector<T> xywh)
+std::vector<T> xywh2xyxy(cv::Rect_<T> xywh)
 {
-    T x1 = xywh[ 0 ];
-    T y1 = xywh[ 1 ];
-    T x2 = xywh[ 0 ] + xywh[ 2 ];
-    T y2 = xywh[ 1 ] + xywh[ 3 ];
-
-    std::vector<T> xyxy{x1, y1, x2, y2};
-    return xyxy;
-}
-
-//std::vector<int> xyxy2xywh(std::vector<int> xyxy);
-//
-//std::vector<int> xywh2xyxy(std::vector<int> xywh);
-
-template <typename T>
-std::vector<T> cxcywh2xyxy(std::vector<T> cxcywh)
-{
-    std::vector<T> xyxy(4);
-    xyxy[ 0 ] = cxcywh[ 0 ] - cxcywh[ 2 ] / 2; // x_min = center_x - width / 2
-    xyxy[ 1 ] = cxcywh[ 1 ] - cxcywh[ 3 ] / 2; // y_min = center_y - height / 2
-    xyxy[ 2 ] = cxcywh[ 0 ] + cxcywh[ 2 ] / 2; // x_max = center_x + width / 2
-    xyxy[ 3 ] = cxcywh[ 1 ] + cxcywh[ 3 ] / 2; // y_max = center_y + height / 2
-    return xyxy;
+    std::vector<T> out{xywh.x, xywh.y, xywh.x + xywh.width, xywh.y + xywh.height};
+    return out;
 }
 
 template <typename T>
-std::vector<T> cxcywh2xyxy(std::vector<T> cxcywh, cv::Point2f factors)
+cv::Rect_<T> cxcywh2xywh(cv::Rect_<T> data)
 {
-    std::vector<T> xyxy(4);
-    xyxy[ 0 ] = (cxcywh[ 0 ] - cxcywh[ 2 ] / 2) * factors.x;
-    xyxy[ 1 ] = (cxcywh[ 1 ] - cxcywh[ 3 ] / 2) * factors.y;
-    xyxy[ 2 ] = (cxcywh[ 0 ] + cxcywh[ 2 ] / 2) * factors.x;
-    xyxy[ 3 ] = (cxcywh[ 1 ] + cxcywh[ 3 ] / 2) * factors.y;
-    return xyxy;
+    cv::Rect_<T> out{data.x - data.width / 2, data.y - data.height / 2, data.width, data.height};
+    return out;
 }
 
 template <typename T>
-std::vector<T> cxcywh2xywh(std::vector<T> cxcywh)
+cv::Rect_<T> cxcywh2xywh(cv::Rect_<T> data, cv::Point_<T> factors)
 {
-    std::vector<T> xywh(4);
-    xywh[ 0 ] = (cxcywh[ 0 ] - cxcywh[ 2 ] / 2); // x_min = center_x - width / 2
-    xywh[ 1 ] = (cxcywh[ 1 ] - cxcywh[ 3 ] / 2); // y_min = center_y - height / 2
-    xywh[ 2 ] = (cxcywh[ 2 ]);                   // width
-    xywh[ 3 ] = (cxcywh[ 3 ]);                   // height
-    return xywh;
+    cv::Rect_<T> out;
+    out.x      = (data.x - data.width / 2) * factors.x;
+    out.y      = (data.y - data.height / 2) * factors.y;
+    out.width  = data.width * factors.x;
+    out.height = data.height * factors.y;
+    return out;
 }
 
+cv::Mat transpose(const cv::Mat& data);
+
 template <typename T>
-std::vector<T> cxcywh2xywh(std::vector<T> cxcywh, cv::Point2f factors)
+cv::Rect_<T> vec2rect(std::vector<T> xywh)
 {
-    std::vector<T> xywh(4);
-    xywh[ 0 ] = (cxcywh[ 0 ] - cxcywh[ 2 ] / 2) * factors.x; // x_min = center_x - width / 2
-    xywh[ 1 ] = (cxcywh[ 1 ] - cxcywh[ 3 ] / 2) * factors.y; // y_min = center_y - height / 2
-    xywh[ 2 ] = (cxcywh[ 2 ]) * factors.x;                   // width
-    xywh[ 3 ] = (cxcywh[ 3 ]) * factors.y;                   // height
-    return xywh;
+    cv::Rect_<T> out{xywh[ 0 ], xywh[ 1 ], xywh[ 2 ], xywh[ 3 ]};
+    return out;
+}
+
+// output=[x,y,w,h]
+template <typename T>
+std::vector<T> rect2vec(cv::Rect_<T> data)
+{
+    std::vector<T> out{data.x, data.y, data.width, data.height};
+    return out;
 }
 
 template <typename T>
@@ -135,15 +110,6 @@ constexpr const T& clamp(const T& v, const T& lo, const T& hi)
 {
     return (v < lo) ? lo : (v > hi ? hi : v);
 }
-
-cv::Mat transpose(const cv::Mat& data);
-
-template <typename T>
-cv::Rect vec2rect(std::vector<T> vec)
-{
-    return cv::Rect(vec[ 0 ], vec[ 1 ], vec[ 2 ], vec[ 3 ]);
-}
-
 // cv::Mat scale_mask(const cv::Mat& masks, const cv::Size& image_shape)
 //{
 //     cv::Size mask_shape = masks.size();
