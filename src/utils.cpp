@@ -109,21 +109,39 @@ size_t dims_volume(nvinfer1::Dims dims)
     return volume;
 }
 
-std::vector<cv::Scalar> generate_color_list(int numColors)
+std::vector<cv::Scalar> generate_color_list(int nc)
 {
     std::vector<cv::Scalar> color_list;
 
-    for (int i = 0; i < numColors; ++i)
+    for (int i = 0; i < nc; ++i)
     {
         // 生成不同的颜色，HSV 色相值从 0 到 180，饱和度和明亮度固定为 255
-        int        hue   = static_cast<int>((i * 180.0) / numColors) % 180; // 色相
-        cv::Scalar color = cv::Scalar(0, 0, 0);                             // 初始化为黑色
-        cv::Mat    hsv(1, 1, CV_8UC3, cv::Scalar(hue, 255, 255));           // HSV颜色
+        int        hue   = static_cast<int>((i * 180.0) / nc) % 180; // 色相
+        cv::Scalar color = cv::Scalar(0, 0, 0);                      // 初始化为黑色
+        cv::Mat    hsv(1, 1, CV_8UC3, cv::Scalar(hue, 255, 255));    // HSV颜色
         cv::Mat    bgr;
 
         // 将 HSV 转换为 BGR
         cv::cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
         color = cv::Scalar(bgr.at<cv::Vec3b>(0, 0)[ 0 ], bgr.at<cv::Vec3b>(0, 0)[ 1 ], bgr.at<cv::Vec3b>(0, 0)[ 2 ]);
+
+        color_list.push_back(color);
+    }
+
+    return color_list;
+}
+
+std::vector<cv::Scalar> generate_gray_color_list(int numColors)
+{
+    std::vector<cv::Scalar> color_list;
+
+    for (int i = 0; i < numColors; ++i)
+    {
+        // 生成不同的灰度值，灰度值范围为 [0, 255]
+        int gray_value = static_cast<int>((i * 255.0) / numColors) % 256; // 生成均匀分布的灰度值
+
+        // RGB 三个通道保持一致，即灰度颜色
+        cv::Scalar color = cv::Scalar(gray_value, gray_value, gray_value); // 灰度颜色
 
         color_list.push_back(color);
     }
@@ -175,7 +193,6 @@ auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat
         resized_mask = mask;
 
     cv::Mat output;
-
     cv::addWeighted(image, 0.3, resized_mask, 0.7, 0, output);
     return output;
 }

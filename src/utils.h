@@ -75,7 +75,9 @@ void print_dims(nvinfer1::Dims dims);
 
 size_t dims_volume(nvinfer1::Dims dims);
 
-std::vector<cv::Scalar> generate_color_list(int numColors);
+std::vector<cv::Scalar> generate_color_list(int nc);
+
+std::vector<cv::Scalar> generate_color_list_v1(int nc);
 
 std::string get_basename(const std::string& filePath);
 

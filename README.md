@@ -1,9 +1,4 @@
-# TensorRT-Lab
-
-Support Tensorrt Version
-
-- ```8.2.0+```
-- ```8.5.0+```
+# TRTPlus
 
 ---
 
@@ -15,14 +10,19 @@ Support Tensorrt Version
 
 ---
 
-## Feat
+## Support
 
-- Only Support **Linux** for now
-- Auto-allocation CPU and GPU memory
-- Auto-analysis TensorRT Model
-- Auto-support **Dynamic** dmoel
+**Only Testing On Linux.**
 
----
+| Task                  | Work | 
+|-----------------------|:----:|
+| segmentation          |  ✔️  | 
+| yolov8 classification |  ✔️  | 
+| yolov8 detection      |  ✔️  | 
+| yolov8 segmentation   |  ❔   | 
+| yolov8 obb detection  |  ❔   | 
+| yolov10 detection     |  ✔️  | 
+| yolov11 detection     |  ✔️  | 
 
 ## Install
 
