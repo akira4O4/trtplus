@@ -1,6 +1,3 @@
-//
-// Created by seeking on 9/23/24.
-//
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
@@ -12,34 +9,9 @@
 #include "vector"
 #include <algorithm>
 #include <opencv2/core/core.hpp>
-void test()
-{
-    auto m = cv::Rect(1, 1, 1, 1);
-    auto r = cpu::cxcywh2xywh(m);
 
-    cv::Mat data = (cv::Mat_<int>(2, 3) << 1, 2, 3, 4, 5, 6);
-    cv::Mat temp = data.row(1).colRange(0, data.cols);
-
-    double    min = 0;
-    double    max = 0;
-    cv::Point min_loc;
-    cv::Point max_loc;
-    cv::minMaxLoc(temp, &min, &max, &min_loc, &max_loc);
-    std::cout << min << " " << min_loc.x << std::endl;
-    std::cout << max << " " << max_loc.x << std::endl;
-
-    std::cout << temp << std::endl;
-    //    auto max_id = cpu::argmax(temp.ptr<int>(0), 3);
-    auto max_id = cpu::argmax((int*) temp.data, 3);
-
-    //    std::cout << *temp.ptr<int>(0) << std::endl;
-    std::cout << max_id << std::endl;
-}
 int main(int argc, char const* argv[])
 {
-    //    test();
-    //    return 0;
-
     uchar              device              = 0;
     float              conf_thr            = 0.2;
     float              iou_thr             = 0.6;
@@ -48,11 +20,10 @@ int main(int argc, char const* argv[])
     std::vector<float> thr                 = {-1, 100, 100, 100, 100, 100};
     std::vector<int>   dynamic_input_shape = {2, 3, 640, 640}; // if your model is dynamic
 
-    std::string model_path =
-        "/home/seeking/llf/code/trtplus/assets/coco8/models/coco8-seg-1x3x640x640.fp32.static.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/coco8/images";
-    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/coco8/output";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/coco8/labels.txt";
+    std::string model_path  = "";
+    std::string images_dir  = "";
+    std::string output_dir  = "";
+    std::string labels_file = "";
 
     //-------------------------------------------------------------------------
 
@@ -273,10 +244,8 @@ int main(int argc, char const* argv[])
                 row_channel.copyTo(protos.row(c));
             }
 
-            // (nf,32)@(32,mh*mw)=(nf,mh*mw)
             ASSERT_TRUE(nms_mask_features.cols == protos.rows);
             cv::Mat masks = nms_mask_features * protos;
-            // mask.shape=[nf,mh*mw]
             masks.convertTo(masks, CV_8U);
             ASSERT_TRUE(masks.isContinuous());
 
