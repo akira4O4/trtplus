@@ -43,17 +43,10 @@ struct Detection
     int         label_id = -1;
     std::string label    = "None";
     float       conf     = 0.0;
-    cv::Rect    box      = {0, 0, 0, 0};
-};
-
-struct ObbDetection
-{
-    int         label_id = -1;
-    std::string label    = "None";
-    float       conf     = 0.0;
     float       angle    = 0.0;
     cv::Rect    box      = {0, 0, 0, 0};
 };
+
 struct Classification
 {
     std::string name;

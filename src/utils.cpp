@@ -165,9 +165,30 @@ cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& det
 
         auto x     = det.box.x;
         auto y     = det.box.y;
+        auto w     = det.box.width;
+        auto h     = det.box.height;
         auto color = colors[ det.label_id ];
+        auto angle = det.angle;
+        if (angle == 0)
+        {
+            // 中心点坐标
+            cv::Point2f center(x + w / 2, y + h / 2);
+            // 构建旋转矩形框
+            cv::RotatedRect rotatedRect(center, cv::Size2f(w, h), angle);
+            // 提取旋转矩形的四个角点
+            cv::Point2f vertices[ 4 ];
+            rotatedRect.points(vertices);
 
-        cv::rectangle(imageCopy, det.box, color, 1);
+            // 绘制旋转矩形框
+            for (int i = 0; i < 4; ++i)
+            {
+                cv::line(imageCopy, vertices[ i ], vertices[ (i + 1) % 4 ], color, 2);
+            }
+        }
+        else
+        {
+            cv::rectangle(imageCopy, det.box, color, 1);
+        }
 
         float conf = floor(100 * det.conf) / 100;
         std::cout << std::fixed << std::setprecision(2);
