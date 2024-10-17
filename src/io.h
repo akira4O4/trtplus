@@ -46,6 +46,14 @@ struct Detection
     cv::Rect    box      = {0, 0, 0, 0};
 };
 
+struct ObbDetection
+{
+    int         label_id = -1;
+    std::string label    = "None";
+    float       conf     = 0.0;
+    float       angle    = 0.0;
+    cv::Rect    box      = {0, 0, 0, 0};
+};
 struct Classification
 {
     std::string name;
@@ -87,23 +95,6 @@ struct YoloDetection
         std::cout << "Name: " << name << "\tShape: [ " << bs << "," << rows << "," << dimensions << " ]" << std::endl;
     }
 };
-
-// struct YoloSegmentation
-//{
-//     int id = -1;
-//     int bs = 0;
-//     int c  = 0;
-//     int h  = 0;
-//     int w  = 0;
-//
-//     size_t volume() const { return bs * c * h * w; };
-//
-//     void print() const
-//     {
-//         std::cout << "Id: " << id << "\tShape: [ bs: " << bs << " c: " << c << " h: " << h << " w: " << w << " ]"
-//                   << std::endl;
-//     }
-// };
 
 } // namespace output
 
