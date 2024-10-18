@@ -1,6 +1,3 @@
-//
-// Created by seeking on 9/23/24.
-//
 #include "iostream"
 #include "src/cpu/postprocess.h"
 #include "src/cpu/preprocess.h"
