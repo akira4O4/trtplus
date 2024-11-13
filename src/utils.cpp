@@ -164,11 +164,6 @@ cv::Mat draw_obb_box(const cv::Mat& image, const std::vector<output::Detection>&
     {
         output::Detection det = detections[ n ];
 
-        //        x, y, w, h, t = rboxes.unbind(dim = -1);
-        //        #Swap edge and angle if h >= w;
-        //        w_     = torch.where(w > h, w, h);
-        //        h_     = torch.where(w > h, h, w);
-        //        t      = torch.where(w > h, t, t + math.pi / 2) % math.pi;
         auto x     = det.box.x;
         auto y     = det.box.y;
         auto color = colors[ det.label_id ];
