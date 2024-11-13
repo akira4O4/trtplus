@@ -10,47 +10,21 @@
 #include <algorithm>
 #include <opencv2/core/core.hpp>
 
-void test()
-{
-    auto m = cv::Rect(1, 1, 1, 1);
-    auto r = cpu::cxcywh2xywh(m);
-
-    cv::Mat data = (cv::Mat_<int>(2, 3) << 1, 2, 3, 4, 5, 6);
-    cv::Mat temp = data.row(1).colRange(0, data.cols);
-
-    double    min = 0;
-    double    max = 0;
-    cv::Point min_loc;
-    cv::Point max_loc;
-    cv::minMaxLoc(temp, &min, &max, &min_loc, &max_loc);
-    std::cout << min << " " << min_loc.x << std::endl;
-    std::cout << max << " " << max_loc.x << std::endl;
-
-    std::cout << temp << std::endl;
-    //    auto max_id = cpu::argmax(temp.ptr<int>(0), 3);
-    auto max_id = cpu::argmax((int*) temp.data, 3);
-
-    //    std::cout << *temp.ptr<int>(0) << std::endl;
-    std::cout << max_id << std::endl;
-}
-
 int main(int argc, char const* argv[])
 {
-    //    test();
-    //    return 0;
 
     uchar              device              = 0;
-    float              conf_thr            = 0.5;
+    float              conf_thr            = 0.6;
     float              iou_thr             = 0.6;
     cv::Scalar         mean                = {0.485, 0.456, 0.406};
     cv::Scalar         std                 = {0.229, 0.224, 0.225};
     std::vector<float> thr                 = {-1, 100, 100, 100, 100, 100};
     std::vector<int>   dynamic_input_shape = {2, 3, 640, 640}; // if your model is dynamic
 
-    std::string model_path  = "/home/seeking/llf/code/trtplus/assets/DOTAv1/models/yolo11n-obb.fp32.static.engine";
-    std::string images_dir  = "/home/seeking/llf/code/trtplus/assets/DOTAv1/images";
-    std::string output_dir  = "/home/seeking/llf/code/trtplus/assets/DOTAv1/outputs";
-    std::string labels_file = "/home/seeking/llf/code/trtplus/assets/DOTAv1/labels.txt";
+    std::string model_path  = "";
+    std::string images_dir  = "";
+    std::string output_dir  = "";
+    std::string labels_file = "";
 
     //-------------------------------------------------------------------------
 
@@ -174,25 +148,25 @@ int main(int argc, char const* argv[])
 
             for (int i = 0; i < det_data_T.rows; ++i)
             {
-                // obb det.shape=[rows,(xywh+angle+nc)]
-                cv::Mat row            = det_data_T.row(i);
-                cv::Mat raw_box_data   = row.colRange(0, 4);
-                cv::Mat raw_angle_data = row.colRange(4, 5);
-                cv::Mat raw_conf_data  = row.colRange(5, nc);
+                // obb det.shape=[rows,(xywh+nc+angle)]
+                cv::Mat row       = det_data_T.row(i);
+                cv::Mat raw_box   = row.colRange(0, 4);
+                cv::Mat raw_conf  = row.colRange(4, nc + 4);
+                cv::Mat raw_angle = row.col(row.cols - 1);
 
                 // Get the max conf
                 cv::Point max_loc;
                 double    max_conf;
-                cv::minMaxLoc(raw_conf_data, nullptr, &max_conf, nullptr, &max_loc);
+                cv::minMaxLoc(raw_conf, nullptr, &max_conf, nullptr, &max_loc);
 
                 if (max_conf >= conf_thr)
                 {
                     confidences.emplace_back(max_conf);
                     label_ids.emplace_back(max_loc.x);
-                    angles.emplace_back(raw_angle_data.at<float>(0, 0));
+                    angles.emplace_back(raw_angle.at<float>(0, 0));
 
-                    auto cxcywh = cv::Rect2f{raw_box_data.at<float>(0, 0), raw_box_data.at<float>(0, 1),
-                                             raw_box_data.at<float>(0, 2), raw_box_data.at<float>(0, 3)};
+                    auto cxcywh = cv::Rect2f{raw_box.at<float>(0, 0), raw_box.at<float>(0, 1), raw_box.at<float>(0, 2),
+                                             raw_box.at<float>(0, 3)};
 
                     auto factors = cv::Point2f(float(iw) / float(input_shape.w), float(ih) / float(input_shape.h));
 
@@ -211,13 +185,13 @@ int main(int argc, char const* argv[])
                 output::Detection det;
                 det.label_id = label_ids[ idx ];
                 det.label    = labels[ det.label_id ];
+                det.box      = boxes[ idx ];
                 det.angle    = angles[ idx ];
                 det.conf     = confidences[ idx ];
-                det.box      = boxes[ idx ];
                 detections.emplace_back(det);
             }
 
-            cv::Mat     draw_img = draw_box(curr_image, detections, color_list);
+            cv::Mat     draw_img = draw_obb_box(curr_image, detections, color_list);
             std::string basename = get_basename(batch_images_path[ n ]);
 
             std::string draw_image_save_path = output_dir + "/" + basename;

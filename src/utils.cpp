@@ -155,7 +155,8 @@ std::string get_basename(const std::string& filePath)
     return filePath.substr(pos + 1);
 }
 
-cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections, std::vector<cv::Scalar> colors)
+cv::Mat draw_obb_box(const cv::Mat& image, const std::vector<output::Detection>& detections,
+                     std::vector<cv::Scalar> colors)
 {
     cv::Mat imageCopy = image.clone();
 
@@ -163,23 +164,30 @@ cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& det
     {
         output::Detection det = detections[ n ];
 
+        //        x, y, w, h, t = rboxes.unbind(dim = -1);
+        //        #Swap edge and angle if h >= w;
+        //        w_     = torch.where(w > h, w, h);
+        //        h_     = torch.where(w > h, h, w);
+        //        t      = torch.where(w > h, t, t + math.pi / 2) % math.pi;
         auto x     = det.box.x;
         auto y     = det.box.y;
-        auto w     = det.box.width;
-        auto h     = det.box.height;
         auto color = colors[ det.label_id ];
-        auto angle = det.angle;
-        if (angle == 0)
+        auto angle = radians2degrees(det.angle);
+
+        if (angle != 0.0)
         {
-            // 中心点坐标
-            cv::Point2f center(x + w / 2, y + h / 2);
-            // 构建旋转矩形框
+            auto w = det.box.width;
+            auto h = det.box.height;
+
+            INFO("%d,%d,%d,%d,%f", x, y, w, h, angle);
+
+            // Get the center x and y.
+            cv::Point2f     center(x + w / 2, y + h / 2);
             cv::RotatedRect rotatedRect(center, cv::Size2f(w, h), angle);
-            // 提取旋转矩形的四个角点
+
             cv::Point2f vertices[ 4 ];
             rotatedRect.points(vertices);
 
-            // 绘制旋转矩形框
             for (int i = 0; i < 4; ++i)
             {
                 cv::line(imageCopy, vertices[ i ], vertices[ (i + 1) % 4 ], color, 2);
@@ -192,15 +200,37 @@ cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& det
 
         float conf = floor(100 * det.conf) / 100;
         std::cout << std::fixed << std::setprecision(2);
-        std::string label = det.label + " " + std::to_string(conf).substr(0, std::to_string(conf).size() - 4);
+        // label:conf:angle
+        std::string label = det.label + ":" + std::to_string(conf).substr(0, std::to_string(conf).size() - 4) + ":" +
+                            std::to_string(angle);
 
-        //        cv::rectangle(imageCopy, cv::Point(x, y - 25), cv::Point(x + label.length() * 15, y), color,
-        //        cv::FILLED);
+        cv::putText(imageCopy, label, cv::Point(x, y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.3, color, 1);
+    }
+
+    return imageCopy;
+}
+
+cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections, std::vector<cv::Scalar> colors)
+{
+    cv::Mat imageCopy = image.clone();
+
+    for (int n = 0; n < detections.size(); ++n)
+    {
+        output::Detection det = detections[ n ];
+
+        auto x     = det.box.x;
+        auto y     = det.box.y;
+        auto color = colors[ det.label_id ];
+
+        cv::rectangle(imageCopy, det.box, color, 1);
+
+        float conf = floor(100 * det.conf) / 100;
+        std::cout << std::fixed << std::setprecision(2);
+        std::string label = det.label + " " + std::to_string(conf).substr(0, std::to_string(conf).size() - 4);
 
         cv::putText(imageCopy, label, cv::Point(x, y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
     }
 
-    // 返回绘制后的图像副本
     return imageCopy;
 }
 
@@ -216,4 +246,9 @@ auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat
     cv::Mat output;
     cv::addWeighted(image, 0.3, resized_mask, 0.7, 0, output);
     return output;
+}
+
+double radians2degrees(double radians)
+{
+    return radians * (180.0 / CV_PI);
 }

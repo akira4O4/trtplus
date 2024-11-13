@@ -84,6 +84,11 @@ std::string get_basename(const std::string& filePath);
 cv::Mat draw_box(const cv::Mat& image, const std::vector<output::Detection>& detections,
                  std::vector<cv::Scalar> colors);
 
+cv::Mat draw_obb_box(const cv::Mat& image, const std::vector<output::Detection>& detections,
+                     std::vector<cv::Scalar> colors);
+
 auto merge_image(const cv::Mat& image, const cv::Mat& mask) -> cv::Mat;
+
+double radians2degrees(double radians);
 
 #endif
