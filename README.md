@@ -20,7 +20,7 @@
 | yolov8 classification |  ✔️  | 
 | yolov8 detection      |  ✔️  | 
 | yolov8 segmentation   |  ❔   | 
-| yolov8 obb detection  |  ❔   | 
+| yolov8 obb detection  |  ✔️  | 
 | yolov10 detection     |  ✔️  | 
 | yolov11 detection     |  ✔️  | 
 
